@@ -1,0 +1,1597 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ReviewRadar</title>
+<meta name="description" content="ReviewRadar turns public app reviews into an evidence-linked product roadmap. Portfolio project by Nandini Kshatriya.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23111316'/%3E%3Cpath d='M9 22a9 9 0 0 1 14 0' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round'/%3E%3Cpath d='M12.5 22a4.5 4.5 0 0 1 7 0' fill='none' stroke='%23fff' stroke-width='2.4' stroke-linecap='round' opacity='.55'/%3E%3Ccircle cx='22' cy='10' r='3' fill='%2314A38B'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+/* ReviewRadar visual identity: an analyst's notebook. Paper neutrals, ink type, one teal signal colour
+   for "this matters", red and amber reserved for problems. Numbers are always monospaced. */
+:root{
+  --bg:#F6F6F3; --surface:#FFFFFF; --sunken:#EFEFEB; --hover:#F2F2EE; --ink:#141518; --ink-2:#3C3E44; --muted:#6C6E75; --faint:#9A9CA2;
+  --line:#E3E3DE; --line-2:#D2D2CC;
+  --accent:#0E7C6B; --accent-ink:#FFFFFF; --accent-weak:#E2F2EE; --accent-text:#0B6457;
+  --bad:#C2372C; --bad-weak:#FBE9E7; --warn:#A8620A; --warn-weak:#FBF0DC; --good:#2D7A4B; --good-weak:#E3F2E8;
+  --s1:#0E7C6B; --s2:#3E4BC4; --s3:#C47A12; --s4:#B4386A; --s5:#58616E; --s6:#7A9A2E; --comp:#B9B5AC;
+  --body:"Geist",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --display:"Geist",ui-sans-serif,system-ui,sans-serif;
+  --mono:"Geist Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --r:12px; --r-sm:8px;
+  --shadow:0 1px 2px rgba(20,21,24,.04),0 1px 1px rgba(20,21,24,.03);
+  --pop:0 12px 32px rgba(20,21,24,.14),0 2px 6px rgba(20,21,24,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1012; --surface:#17181B; --sunken:#1E2023; --hover:#1C1D20; --ink:#ECECE8; --ink-2:#C9CAC5; --muted:#9A9B98; --faint:#6E706F;
+  --line:#28292D; --line-2:#36383C;
+  --accent:#2BB59C; --accent-ink:#06120F; --accent-weak:#12302A; --accent-text:#4FD1B7;
+  --bad:#F0675B; --bad-weak:#3A1D1A; --warn:#E3A44B; --warn-weak:#352816; --good:#5DC48A; --good-weak:#15301F;
+  --s1:#2BB59C; --s2:#8C95F0; --s3:#E3A44B; --s4:#E07AA3; --s5:#A3AAB5; --s6:#A8C860; --comp:#55575B;
+  --shadow:none; --pop:0 12px 32px rgba(0,0,0,.5); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1012; --surface:#17181B; --sunken:#1E2023; --hover:#1C1D20; --ink:#ECECE8; --ink-2:#C9CAC5; --muted:#9A9B98; --faint:#6E706F;
+  --line:#28292D; --line-2:#36383C;
+  --accent:#2BB59C; --accent-ink:#06120F; --accent-weak:#12302A; --accent-text:#4FD1B7;
+  --bad:#F0675B; --bad-weak:#3A1D1A; --warn:#E3A44B; --warn-weak:#352816; --good:#5DC48A; --good-weak:#15301F;
+  --s1:#2BB59C; --s2:#8C95F0; --s3:#E3A44B; --s4:#E07AA3; --s5:#A3AAB5; --s6:#A8C860; --comp:#55575B;
+  --shadow:none; --pop:0 12px 32px rgba(0,0,0,.5); color-scheme:dark}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--display);margin:0;line-height:1.2;letter-spacing:-.015em;text-wrap:balance;font-weight:600}
+p{margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+a{color:var(--accent-text);text-underline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.muted{color:var(--muted)}
+.small{font-size:.86rem}
+
+/* ---------- shell ---------- */
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);min-height:100vh;background:linear-gradient(to right,var(--surface) 239px,var(--line) 239px 240px,var(--bg) 240px)}
+.rail{background:var(--surface);border-right:1px solid var(--line);padding:18px 12px 16px;position:sticky;top:0;height:100vh;display:flex;flex-direction:column;gap:20px;overflow-y:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:2px 8px}
+.brand-mark{width:28px;height:28px;flex:none}
+.brand b{font-size:1.06rem;font-weight:650;letter-spacing:-.02em}
+.brand small{display:block;font-size:.74rem;color:var(--muted);font-weight:500;margin-top:-2px}
+.nav{display:flex;flex-direction:column;gap:14px}
+.nav-group{display:flex;flex-direction:column;gap:1px}
+.nav-label{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);font-weight:600;padding:0 10px 4px}
+.nav button{border:0;background:none;text-align:left;padding:7px 10px;border-radius:7px;color:var(--ink-2);font-weight:500;display:flex;gap:10px;align-items:center;min-height:34px;transition:background .12s,color .12s}
+.nav button svg{width:16px;height:16px;flex:none;color:var(--faint)}
+.nav button:hover{background:var(--hover);color:var(--ink)}
+.nav button[aria-current="page"]{background:var(--sunken);color:var(--ink);font-weight:600}
+.nav button[aria-current="page"] svg{color:var(--accent)}
+.nav .count{margin-left:auto;font-family:var(--mono);font-size:.72rem;color:var(--muted);background:var(--sunken);border-radius:6px;padding:0 6px;min-width:20px;text-align:center}
+.nav button[aria-current="page"] .count{background:var(--surface)}
+.rail-foot{margin-top:auto;display:flex;flex-direction:column;gap:10px;padding:12px 10px 0;border-top:1px solid var(--line);font-size:.78rem;color:var(--muted)}
+.rail-foot .theme{display:flex;gap:4px}
+.rail-foot .theme button{flex:1;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 0;font-size:.76rem;color:var(--muted)}
+.rail-foot .theme button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+main{min-width:0;display:flex;flex-direction:column}
+.context{position:sticky;top:0;z-index:6;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line)}
+.context-in{max-width:1240px;margin-inline:auto;padding:10px 32px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ctl{display:inline-flex;align-items:center;gap:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;box-shadow:var(--shadow);min-height:34px;padding-left:10px;max-width:100%}
+.ctl label{font-size:.76rem;color:var(--muted);font-weight:500;white-space:nowrap}
+.ctl select{border:0;background:transparent;padding:6px 26px 6px 6px;font-weight:600;font-size:.88rem;appearance:none;-webkit-appearance:none;min-width:0;max-width:100%;text-overflow:ellipsis;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+.ctl select:focus-visible{outline:none}
+.ctl:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
+.context .spacer{flex:1}
+.src{display:inline-flex;gap:6px;align-items:center;font-size:.78rem;font-weight:600;border-radius:999px;padding:4px 10px 4px 8px;background:var(--warn-weak);color:var(--warn);white-space:nowrap}
+.src::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.src.real{background:var(--good-weak);color:var(--good)}
+
+.page{max-width:1240px;width:100%;margin-inline:auto;padding:28px 32px 72px}
+.view{display:none;flex-direction:column;gap:20px}
+.view.on{display:flex;animation:fade .18s ease-out}
+@keyframes fade{from{opacity:.4;transform:translateY(3px)}to{opacity:1;transform:none}}
+.view-head{display:flex;flex-direction:column;gap:6px;max-width:80ch;margin-bottom:4px}
+.eyebrow{font-size:.74rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.view-head h2{font-size:1.75rem;font-weight:650;letter-spacing:-.025em}
+.view-head .lede{font-size:1.02rem;color:var(--ink-2);max-width:72ch}
+.view-head .lede b{color:var(--ink)}
+.answer{display:flex;gap:12px;align-items:baseline;background:var(--accent-weak);border-radius:var(--r-sm);padding:12px 16px;font-size:1rem;max-width:90ch;color:var(--ink)}
+.answer .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--accent-text);white-space:nowrap}
+.answer:empty{display:none}
+
+/* ---------- surfaces ---------- */
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g32{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px 20px;min-width:0;display:flex;flex-direction:column;gap:14px;box-shadow:var(--shadow)}
+.panel-head{display:flex;flex-direction:column;gap:3px}
+.panel-head h3{font-size:1rem;font-weight:600}
+.panel-head p{font-size:.86rem;color:var(--muted);max-width:75ch}
+.panel-head.row{flex-direction:row;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+.panel.flush{padding:0;gap:0}
+.panel.flush>.panel-head{padding:16px 20px 12px}
+
+/* KPI strip: one surface split by hairlines instead of four floating cards */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.kpis>.panel{border:0;border-radius:0;box-shadow:none;border-left:1px solid var(--line);padding:16px 20px;gap:6px}
+.kpis>.panel:first-child{border-left:0}
+#compKpis{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+.kpi .label{font-size:.78rem;color:var(--muted);font-weight:500}
+.kpi .value{font-size:1.85rem;font-weight:500;line-height:1.1;letter-spacing:-.03em;font-family:var(--mono)}
+.delta{font-family:var(--mono);font-size:.76rem}
+.up-bad,.down-bad{color:var(--bad)} .up-good,.down-good{color:var(--good)}
+
+.chart-box{position:relative;height:280px}
+.chart-box.tall{height:360px}
+.chart-note{font-size:.8rem;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.chart-note .gapkey{display:inline-flex;align-items:center;gap:6px}
+.chart-note .gapkey i{width:14px;height:10px;border-radius:2px;background:repeating-linear-gradient(135deg,var(--line-2) 0 2px,transparent 2px 5px);border:1px solid var(--line-2)}
+
+.alert{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.alert:last-child{border-bottom:0}
+.alert .stripe{display:none}
+.alert b{display:block;font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:.74rem;font-weight:600;border-radius:999px;padding:1px 8px;background:var(--sunken);color:var(--muted);white-space:nowrap;line-height:1.6}
+.pill.bad{background:var(--bad-weak);color:var(--bad)} .pill.warn{background:var(--warn-weak);color:var(--warn)} .pill.good{background:var(--good-weak);color:var(--good)} .pill.acc{background:var(--accent-weak);color:var(--accent-text)}
+.insights{display:flex;flex-direction:column;margin:0;padding:0;list-style:none;counter-reset:ins}
+.insights li{position:relative;padding:10px 0 10px 30px;border-bottom:1px solid var(--line);color:var(--ink-2);counter-increment:ins}
+.insights li:last-child{border-bottom:0}
+.insights li::before{content:counter(ins);position:absolute;left:0;top:11px;width:20px;height:20px;border-radius:6px;background:var(--sunken);color:var(--muted);font:600 .72rem/20px var(--mono);text-align:center}
+.insights li b{color:var(--ink)}
+
+/* controls */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:.76rem;color:var(--muted);font-weight:500}
+select,input[type=search],input[type=text],input[type=file],textarea{background:var(--surface);border:1px solid var(--line-2);border-radius:8px;padding:7px 10px;min-height:36px}
+input[type=search]:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-weak)}
+.search{position:relative}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--faint);pointer-events:none}
+.search input{padding-left:32px;width:100%}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line-2);background:var(--surface);border-radius:8px;padding:6px 12px;font-weight:600;font-size:.88rem;min-height:34px;box-shadow:var(--shadow);transition:background .12s,border-color .12s;white-space:nowrap}
+.btn:hover{background:var(--hover);border-color:var(--faint)}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.btn.primary:hover{opacity:.9}
+.btn.small{padding:3px 9px;min-height:28px;font-size:.8rem;box-shadow:none}
+.btn.ghost{border-color:transparent;background:transparent;box-shadow:none}
+.btn.ghost:hover{background:var(--hover)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line-2);background:var(--surface);border-radius:999px;padding:3px 11px;font-size:.82rem;font-weight:500;color:var(--ink-2);min-height:28px;transition:all .12s}
+.chip:hover{border-color:var(--faint)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg{display:inline-flex;background:var(--sunken);border-radius:8px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:4px 12px;font-weight:600;font-size:.84rem;color:var(--muted);border-radius:6px;min-height:28px}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.1)}
+
+/* feedback */
+.fb-tools{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;gap:10px;align-items:end}
+.fb-count{display:flex;justify-content:space-between;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);font-size:.86rem;color:var(--muted)}
+#fList{padding:0 20px}
+.review{border-bottom:1px solid var(--line);padding-block:14px;display:flex;flex-direction:column;gap:7px}
+.review:last-child{border-bottom:0}
+.review>div:nth-child(2){font-size:.95rem;color:var(--ink);max-width:90ch}
+.review .meta{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;font-size:.78rem;color:var(--muted)}
+.stars{color:var(--warn);letter-spacing:1px;font-size:.82rem}
+mark{background:color-mix(in srgb,var(--s3) 26%,transparent);color:inherit;border-radius:3px;padding:0 2px}
+#fMore{margin:6px 20px 18px;align-self:flex-start}
+
+/* tables */
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th{text-align:left;font-size:.74rem;color:var(--muted);font-weight:500;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--surface)}
+td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:var(--hover)}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.panel.flush .table-wrap{padding:0 10px 6px}
+.bar{height:6px;border-radius:3px;background:var(--sunken);overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.stack{display:flex;height:6px;border-radius:3px;overflow:hidden;background:var(--sunken);min-width:120px;gap:1px}
+.stack i{display:block;height:100%}
+
+/* prioritize */
+.weights{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.wt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;background:var(--bg)}
+.wt label{display:flex;justify-content:space-between;align-items:center;font-weight:600;font-size:.88rem}
+.wt label i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:6px}
+.wt p{font-size:.76rem;color:var(--muted);line-height:1.4}
+.wt .num{font-size:.85rem;background:var(--surface);border:1px solid var(--line);border-radius:5px;padding:0 6px}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.toggle{display:flex;gap:10px;align-items:flex-start;font-weight:600;font-size:.9rem}
+.toggle input{margin-top:4px;accent-color:var(--accent)}
+.toggle span span{display:block;font-weight:400;color:var(--muted);font-size:.82rem}
+details.formula-d summary{cursor:pointer;font-size:.84rem;font-weight:600;color:var(--muted)}
+.formula{font-family:var(--mono);font-size:.76rem;background:var(--sunken);border-radius:8px;padding:10px 12px;overflow-x:auto;margin-top:8px;color:var(--ink-2);line-height:1.7}
+.evidence{background:var(--sunken);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:.84rem;margin-top:6px}
+.evidence q{display:block;color:var(--ink)}
+.evidence q::before{content:"\201C"} .evidence q::after{content:"\201D"}
+details>summary{list-style:none}
+details>summary::-webkit-details-marker{display:none}
+.ev-sum{cursor:pointer;font-weight:600;font-size:.82rem;color:var(--accent-text);display:inline-flex;align-items:center;gap:4px}
+.ev-sum::after{content:"";width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg) translateY(-2px)}
+details[open] .ev-sum::after{transform:rotate(-135deg)}
+.addsel{min-height:28px;padding:2px 8px;font-size:.8rem;font-weight:600;color:var(--accent-text);border-color:var(--line)}
+.rank{font-family:var(--mono);color:var(--faint);font-size:.82rem}
+.score-cell b{font-family:var(--mono);font-size:1.05rem;font-weight:600}
+
+/* roadmap */
+.board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;align-items:start}
+.col{background:var(--sunken);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px;min-height:200px}
+.col h3{display:flex;justify-content:space-between;align-items:center;font-size:.9rem;padding:4px 6px 2px}
+.col h3 .num{font-size:.78rem;color:var(--muted);font-weight:500}
+.col h3 .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px;background:var(--accent)}
+.col:nth-child(2) h3 .dot{background:var(--s2)} .col:nth-child(3) h3 .dot{background:var(--faint)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;box-shadow:var(--shadow)}
+.card>b{font-size:.95rem}
+.card .row{display:flex;gap:6px;flex-wrap:wrap}
+.card q{font-size:.82rem;color:var(--muted);border-left:2px solid var(--line-2);padding-left:8px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+.empty{color:var(--muted);font-size:.88rem;padding:14px 4px;text-align:center}
+.col .empty{border:1px dashed var(--line-2);border-radius:10px;padding:22px 10px}
+
+/* audit */
+.audit-item{border-bottom:1px solid var(--line);padding-block:14px;display:flex;flex-direction:column;gap:10px}
+.audit-item:last-child{border-bottom:0}
+.judge{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line-2);border-radius:999px;padding:2px 3px 2px 11px;font-size:.82rem;font-weight:600;background:var(--surface)}
+.judge button{border:1px solid var(--line);background:var(--bg);border-radius:999px;width:30px;height:26px;font-size:.82rem;line-height:1;color:var(--muted)}
+.judge button:hover{border-color:var(--faint)}
+.judge button[aria-pressed="true"].ok{background:var(--good);border-color:var(--good);color:#fff}
+.judge button[aria-pressed="true"].no{background:var(--bad);border-color:var(--bad);color:#fff}
+#auList{padding:0 20px}
+
+/* evidence labels (shared with the case study) */
+.tag{display:inline-block;font-size:.68rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;border-radius:4px;padding:1px 6px;margin-right:4px;vertical-align:1px;font-family:var(--body)}
+.tag.v{background:var(--good-weak);color:var(--good)} .tag.q{background:var(--accent-weak);color:var(--accent-text)} .tag.a{background:var(--warn-weak);color:var(--warn)} .tag.s{background:var(--sunken);color:var(--muted)} .tag.r{background:color-mix(in srgb,var(--s2) 16%,transparent);color:var(--s2)}
+
+/* dialogs, toast, loading */
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);max-width:min(680px,calc(100vw - 32px));width:100%;padding:24px;box-shadow:var(--pop)}
+dialog::backdrop{background:rgba(15,16,18,.45);backdrop-filter:blur(2px)}
+dialog form{display:flex;flex-direction:column;gap:14px}
+dialog h2{font-size:1.25rem}
+textarea{width:100%;min-height:260px;font-family:var(--mono);font-size:.8rem;line-height:1.6}
+pre.code{font-family:var(--mono);font-size:.76rem;background:var(--sunken);padding:12px 14px;border-radius:8px;overflow-x:auto;margin:0;line-height:1.6}
+.toast{position:fixed;bottom:calc(24px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:9px;font-weight:600;font-size:.88rem;z-index:30;box-shadow:var(--pop);animation:fade .15s}
+.loading{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:40}
+.loading>div{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--muted);font-weight:500;text-align:center;padding:24px}
+.loading .spin{width:28px;height:28px;border-radius:50%;border:2.5px solid var(--line-2);border-top-color:var(--accent);animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.src-note{font-size:.84rem;color:var(--ink-2);background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 14px;display:flex;gap:10px;align-items:flex-start}
+.src-note b{color:var(--ink)}
+.src-note .tag{margin-top:2px;flex:none}
+
+/* case study */
+.doc{max-width:74ch;display:flex;flex-direction:column;gap:14px;font-size:1rem;line-height:1.7;color:var(--ink-2);margin-inline:auto;width:100%}
+.doc h1{font-size:2.3rem;letter-spacing:-.035em;color:var(--ink);line-height:1.1}
+.doc h2{font-size:1.4rem;margin-top:22px;padding-top:22px;border-top:1px solid var(--line);color:var(--ink)}
+.doc h3{font-size:1.08rem;color:var(--ink);margin-top:8px}
+.doc h2:first-of-type{border-top:0;margin-top:0;padding-top:0}
+.doc p,.doc li{max-width:72ch}
+.doc strong{color:var(--ink)}
+.doc ul,.doc ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:5px}
+.doc .callout{background:var(--warn-weak);color:var(--ink);border-radius:10px;padding:12px 16px}
+.doc blockquote{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:12px 18px;margin:0}
+.doc blockquote p{margin:.3em 0}
+.doc table{font-size:.86rem;line-height:1.5}
+.doc .table-wrap{border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+.doc code{font-family:var(--mono);font-size:.84em;background:var(--sunken);padding:1px 5px;border-radius:4px}
+.doc img{max-width:100%;border-radius:10px;border:1px solid var(--line)}
+.doc hr{border:0;border-top:1px solid var(--line);margin:8px 0}
+
+/* ---------- responsive ---------- */
+@media (max-width:1180px){.g32{grid-template-columns:minmax(0,1fr)}.weights{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:980px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis>.panel:nth-child(3){border-left:0}.kpis>.panel:nth-child(n+3){border-top:1px solid var(--line)}.fb-tools{grid-template-columns:repeat(3,minmax(0,1fr))}.fb-tools .search-field{grid-column:1/-1}}
+@media (max-width:820px){
+  .app{grid-template-columns:minmax(0,1fr);background:var(--bg)}
+  .rail{position:sticky;top:0;height:auto;flex-direction:column;padding:10px 0 0;gap:8px;z-index:8;border-right:0;border-bottom:1px solid var(--line);overflow:visible}
+  .brand{padding:0 16px}
+  .nav{flex-direction:row;overflow-x:auto;gap:2px;padding:0 12px 8px;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav-group{flex-direction:row;gap:2px}
+  .nav-label{display:none}
+  .nav button{white-space:nowrap;padding:6px 10px}
+  .nav button svg{display:none}
+  .rail-foot{display:none}
+  .context{position:static}
+  .context-in{padding:10px 16px}
+  .page{padding:20px 16px 56px}
+  .view-head h2{font-size:1.45rem}
+  .g2,.board{grid-template-columns:minmax(0,1fr)}
+  .panel{padding:16px}
+  .panel.flush>.panel-head{padding:14px 16px 10px}
+  #fList,#auList{padding:0 16px}
+  .kpi .value{font-size:1.5rem}
+  .kpis>.panel{padding:14px 16px}
+  .chart-box.tall{height:300px}
+}
+@media (max-width:520px){
+  .weights{grid-template-columns:minmax(0,1fr)}
+  .fb-tools{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fb-tools .sort-field{grid-column:1/-1}
+  .ctl{flex:1 1 calc(50% - 5px)}
+  .ctl.wide{flex-basis:100%}
+  .ctl select{flex:1}
+  .context .spacer{display:none}
+  .answer{flex-direction:column;gap:2px}
+  .doc h1{font-size:1.8rem}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="loading" id="loading"><div><span class="spin"></span><span id="loadingMsg">Loading real Play Store reviews…</span></div></div>
+<div class="app">
+  <aside class="rail">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--ink)"/><path d="M9 22a9 9 0 0 1 14 0" fill="none" stroke="var(--bg)" stroke-width="2.4" stroke-linecap="round"/><path d="M12.5 22a4.5 4.5 0 0 1 7 0" fill="none" stroke="var(--bg)" stroke-width="2.4" stroke-linecap="round" opacity=".55"/><circle cx="22" cy="10" r="3" fill="var(--accent)"/></svg>
+      <div><b>ReviewRadar</b><small>Feedback to roadmap</small></div>
+    </div>
+    <nav class="nav" aria-label="Views">
+      <div class="nav-group"><span class="nav-label">Understand</span>
+        <button data-view="overview" aria-current="page"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>Overview</button>
+        <button data-view="feedback"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" stroke-linejoin="round"/></svg>Feedback</button>
+        <button data-view="trends"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 12l3.5-4 3 2.5L14 4" stroke-linecap="round" stroke-linejoin="round"/></svg>Trends and releases</button>
+      </div>
+      <div class="nav-group"><span class="nav-label">Compare</span>
+        <button data-view="competitors"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 14V7M8 14V2M12 14V9" stroke-linecap="round"/></svg>Competitors</button>
+      </div>
+      <div class="nav-group"><span class="nav-label">Decide</span>
+        <button data-view="prioritize"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 4h10M3 8h7M3 12h4" stroke-linecap="round"/></svg>Prioritize</button>
+        <button data-view="roadmap"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="2" y="3" width="3.5" height="10" rx="1"/><rect x="6.5" y="3" width="3.5" height="7" rx="1"/><rect x="11" y="3" width="3" height="4" rx="1"/></svg>Roadmap <span class="count" id="rmCount">0</span></button>
+      </div>
+      <div class="nav-group"><span class="nav-label">Trust</span>
+        <button data-view="audit"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 8.5l3 3 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>Tag audit</button>
+        <button data-view="case"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 2h6l3 3v9H4z" stroke-linejoin="round"/><path d="M6.5 8h4M6.5 11h4" stroke-linecap="round"/></svg>Case study</button>
+      </div>
+    </nav>
+    <div class="rail-foot">
+      <div class="theme" role="group" aria-label="Theme"><button data-th="light">Light</button><button data-th="auto">Auto</button><button data-th="dark">Dark</button></div>
+      <span>Portfolio project by Nandini Kshatriya. Runs fully in your browser. Files you import are never uploaded.</span>
+    </div>
+  </aside>
+
+  <main>
+    <div class="context"><div class="context-in">
+      <div class="ctl wide"><label for="dsSel">Dataset</label><select id="dsSel"><option value="real">Swiggy and Zomato · 2026</option><option value="real23">Swiggy and Zomato · 2023</option><option value="sim">Rider apps · simulated</option></select></div>
+      <div class="ctl"><label for="appSel">Your app</label><select id="appSel"></select></div>
+      <div class="ctl"><label for="periodSel">Window</label>
+        <select id="periodSel"><option value="4">Last 4 weeks</option><option value="8">Last 8 weeks</option><option value="12">Last 12 weeks</option><option value="26" id="periodAll">All weeks</option></select></div>
+      <span class="spacer"></span>
+      <span class="src" id="srcBadge">Loading…</span>
+      <button class="btn" id="taxBtn">Edit topics</button>
+      <button class="btn primary" id="importBtn"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 11V2M4.5 5.5L8 2l3.5 3.5M2.5 11v2.5h11V11" stroke-linecap="round" stroke-linejoin="round"/></svg>Import reviews</button>
+    </div></div>
+
+    <div class="page">
+    <!-- OVERVIEW -->
+    <section class="view on" id="v-overview">
+      <div class="view-head"><span class="eyebrow" id="ovSub"></span><h2 id="ovTitle">What customers are telling you</h2></div>
+      <div class="answer" id="ovAnswer"></div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid g32">
+        <div class="panel"><div class="panel-head"><h3>What to look at first</h3><p>Generated from the numbers on this page. Each line says what the data shows and what to check next.</p></div><ul class="insights" id="insights"></ul></div>
+        <div class="panel"><div class="panel-head"><h3>Emerging issues</h3><p>Topics whose share of reviews over the last two weeks is more than two standard deviations above their own earlier baseline. Using share rather than count means a rise in total reviews does not set off alerts.</p></div><div id="alerts"></div></div>
+      </div>
+      <div class="grid g2">
+        <div class="panel"><div class="panel-head"><h3>Top topics in this window</h3><p>Bar colour shows average sentiment. Red is strongly negative, amber is mildly negative, green is neutral or positive.</p></div><div class="chart-box"><canvas id="cTopics" aria-label="Top topics bar chart"></canvas></div></div>
+        <div class="panel"><div class="panel-head"><h3>Average rating by week</h3><p>Written reviews only, so this sits below the public store rating.</p></div><div class="chart-box"><canvas id="cRating" aria-label="Weekly average rating"></canvas></div><div class="chart-note" id="ratingNote"></div></div>
+      </div>
+      <p class="src-note" id="srcNote"></p>
+    </section>
+
+    <!-- FEEDBACK -->
+    <section class="view" id="v-feedback">
+      <div class="view-head"><span class="eyebrow">Understand</span><h2>Feedback explorer</h2><p class="lede">Read what customers actually wrote. Filter by topic, rating or sentiment. Matched keywords are highlighted so you can see why a review was tagged.</p></div>
+      <div class="panel">
+        <div class="fb-tools">
+          <div class="field search-field"><label for="q">Search reviews</label><div class="search"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14" stroke-linecap="round"/></svg><input type="search" id="q" placeholder="Try refund, cold food, gold, otp"></div></div>
+          <div class="field"><label for="fRating">Rating</label><select id="fRating"><option value="">All ratings</option><option value="1-2">1 to 2 stars</option><option value="3">3 stars</option><option value="4-5">4 to 5 stars</option></select></div>
+          <div class="field"><label for="fSent">Sentiment</label><select id="fSent"><option value="">All</option><option value="neg">Negative</option><option value="neu">Neutral</option><option value="pos">Positive</option></select></div>
+          <div class="field sort-field"><label for="fSort">Sort by</label><select id="fSort"><option value="new">Newest</option><option value="neg">Most negative</option><option value="pos">Most positive</option><option value="up">Most upvoted</option></select></div>
+        </div>
+        <div class="field"><label>Topics</label><div class="chips" id="fTopics"></div></div>
+      </div>
+      <div class="panel flush"><div class="fb-count"><span id="fCount"></span><span class="small">Showing newest first unless sorted</span></div><div id="fList"></div><button class="btn" id="fMore" hidden>Show 40 more</button></div>
+    </section>
+
+    <!-- TRENDS -->
+    <section class="view" id="v-trends">
+      <div class="view-head"><span class="eyebrow">Understand</span><h2>Trends and releases</h2><p class="lede">Weekly mentions per topic for your app. Switch to share of reviews when total volume moves a lot, so a busy week does not look like a new problem.</p></div>
+      <div class="answer" id="trAnswer"></div>
+      <div class="panel">
+        <div class="panel-head row"><div class="chips" id="tTopics"></div>
+          <div class="seg" role="group" aria-label="Scale"><button id="tAbs" aria-pressed="true">Count</button><button id="tPct" aria-pressed="false">Share of reviews</button></div></div>
+        <div class="chart-box tall"><canvas id="cTrend" aria-label="Topic trend chart"></canvas></div>
+        <div class="chart-note"><span id="relNote"></span><span class="gapkey" id="gapKey" hidden><i></i>Feed gap reported upstream</span></div>
+      </div>
+      <div class="grid">
+        <div class="panel flush"><div class="panel-head"><h3>Spike detection</h3><p>Last two weeks against each topic's baseline. Weeks inside a known feed gap are left out of the baseline.</p></div><div class="table-wrap"><table id="spikeTbl"></table></div></div>
+        <div class="panel flush"><div class="panel-head"><h3>Release check</h3><p>Versions grouped as major.minor with at least 40 reviews. Each version is compared with the three before it, and a change is shown only when a two-proportion test gives |z| ≥ 2. Reviews from feed-gap weeks are left out.</p></div><div class="table-wrap"><table id="verTbl"></table></div></div>
+      </div>
+    </section>
+
+    <!-- COMPETITORS -->
+    <section class="view" id="v-competitors">
+      <div class="view-head"><span class="eyebrow">Compare</span><h2>Competitor benchmark</h2><p class="lede">Mentions per 100 reviews, so apps with different review volumes compare fairly. Public reviews are the only competitor data most early teams can get.</p></div>
+      <div class="answer" id="cpAnswer"></div>
+      <div class="filters"><div class="seg" role="group" aria-label="Rating band"><button id="cbNeg" aria-pressed="true">1 to 2 star reviews only</button><button id="cbAll" aria-pressed="false">All reviews</button></div><span class="muted small" style="max-width:70ch">Comparing only unhappy reviews is the default because the two apps' rating mix differs. It asks what unhappy users are unhappy about and removes most of the sampling skew.</span></div>
+      <div class="kpis" id="compKpis"></div>
+      <div class="panel"><div class="panel-head"><h3>Mentions per 100 reviews</h3></div><div class="chart-box tall"><canvas id="cComp" aria-label="Competitor comparison"></canvas></div></div>
+      <div class="panel flush"><div class="panel-head"><h3>Where you are behind or ahead</h3><p>A gap counts only when it is larger than its 95% confidence interval.</p></div><div class="table-wrap"><table id="compTbl"></table></div></div>
+    </section>
+
+    <!-- PRIORITIZE -->
+    <section class="view" id="v-prioritize">
+      <div class="view-head"><span class="eyebrow">Decide</span><h2>Prioritize with evidence</h2><p class="lede">Every score can be explained. Set the weights to match your strategy, agree an effort size with engineering, and read the evidence before you commit.</p></div>
+      <div class="answer" id="prAnswer"></div>
+      <div class="panel">
+        <div class="weights">
+          <div class="wt"><label for="wR"><span><i style="background:var(--s1)"></i>Reach</span><span class="num" id="wRv"></span></label><input type="range" id="wR" min="0" max="5" value="4"><p>Share of reviews that mention the topic</p></div>
+          <div class="wt"><label for="wS"><span><i style="background:var(--s2)"></i>Severity</span><span class="num" id="wSv"></span></label><input type="range" id="wS" min="0" max="5" value="3"><p>How negative those reviews are</p></div>
+          <div class="wt"><label for="wM"><span><i style="background:var(--s3)"></i>Momentum</span><span class="num" id="wMv"></span></label><input type="range" id="wM" min="0" max="5" value="2"><p>Growth in the second half of the window</p></div>
+          <div class="wt"><label for="wC"><span><i style="background:var(--s4)"></i>Competitive gap</span><span class="num" id="wCv"></span></label><input type="range" id="wC" min="0" max="5" value="2"><p>How far behind competitors you are</p></div>
+        </div>
+        <label class="toggle"><input type="checkbox" id="wUp"><span>Weight reach by upvotes<span>Each review counts 1 + log₂(1 + upvotes), so a complaint many users agreed with counts more than one loud reviewer.</span></span></label>
+        <details class="formula-d"><summary>How the score is calculated</summary><div class="formula">priority = 100 × Σ(weight × normalised signal) ÷ Σ weights × confidence ÷ effort<br>competitive gap = your topic share minus competitors' pooled share among 1 to 2 star reviews (all reviews if fewer than 50 per app)<br>confidence = 1.0 at 30 or more mentions, 0.85 at 12 or more, otherwise 0.6<br>effort = S 1.0, M 1.5, L 2.5</div></details>
+      </div>
+      <div class="panel flush"><div class="table-wrap"><table id="prioTbl"></table></div></div>
+    </section>
+
+    <!-- ROADMAP -->
+    <section class="view" id="v-roadmap">
+      <div class="view-head"><span class="eyebrow">Decide</span><h2>Evidence-linked roadmap</h2><p class="lede">Items added from Prioritize keep their score, evidence count, a real quote and the metric they should move. Saved in this browser only.</p></div>
+      <div class="filters"><button class="btn" id="rmCopy">Copy as Markdown</button><button class="btn ghost" id="rmClear">Clear roadmap</button><span id="rmConfirm" hidden><span class="muted small">Remove all items?</span> <button class="btn small" id="rmYes">Yes, clear</button> <button class="btn small" id="rmNo">Cancel</button></span></div>
+      <div class="board" id="board"></div>
+    </section>
+
+    <!-- TAG AUDIT -->
+    <section class="view" id="v-audit">
+      <div class="view-head"><span class="eyebrow">Trust</span><h2>Tag audit</h2><p class="lede">Keyword tagging is only useful if it is right. Judge each tag on a random sample, and ReviewRadar reports precision per topic with a 95% Wilson interval. No accuracy figure is shown until someone has judged the tags.</p></div>
+      <div class="kpis" id="auKpis"></div>
+      <div class="panel flush"><div class="panel-head row"><p class="muted small" id="auNote" style="max-width:70ch"></p><button class="btn" id="auNew">Draw a new sample of 25</button></div><div id="auList"></div></div>
+      <div class="panel flush"><div class="panel-head"><h3>Precision by topic</h3></div><div class="table-wrap"><table id="auTbl"></table></div></div>
+    </section>
+
+    <section class="view" id="v-case">
+      <article class="doc" id="caseDoc"><!--CASE:START--><h1>ReviewRadar: turning app reviews into a roadmap you can defend</h1>
+<p><em>Product case study · Nandini Kshatriya · October 2026</em></p>
+<blockquote>
+<p><strong>How to read the labels.</strong></p>
+<ul>
+<li><span class="tag v">Verified</span> a published figure I read in the source itself, with its date and sample.</li>
+<li><span class="tag q">Qualitative</span> an observation or quote, not a measurement.</li>
+<li><span class="tag r">My analysis</span> a number I computed from public review data. Every one can be reproduced from <code>scripts/</code> and the app.</li>
+<li><span class="tag a">Assumption</span> my judgment, not yet tested.</li>
+<li><span class="tag s">Simulated</span> generated demo data.</li>
+</ul>
+<p>I did not interview or survey anyone for this project. All user evidence is secondary.</p>
+</blockquote>
+<h2>In short</h2>
+<ul>
+<li><strong>Problem.</strong> PMs at growing consumer apps get thousands of store reviews a month. Most read a few, remember the angriest ones, and argue priorities from anecdotes.</li>
+<li><strong>What I built.</strong> A browser-only workspace that tags reviews into topics, checks each release for regressions, compares complaint <em>rates</em> with a competitor fairly, and ranks what to fix with a score you can explain. Every ranked item links to the reviews behind it.</li>
+<li><strong>What the real data showed.</strong> I ran it on <strong>228,274 public Play Store reviews of Swiggy and Zomato written between 6 April and 20 September 2026.</strong> <span class="tag r">My analysis</span><ul>
+<li>On raw rates, Swiggy looks worse than Zomato on <strong>14 of 16</strong> topics in the last 12 weeks.</li>
+<li>Comparing only unhappy (1 to 2 star) reviews, Swiggy is clearly behind on <strong>5</strong>, clearly ahead on <strong>4</strong>, and level on the rest. The raw view mostly reflects that Swiggy&#39;s reviewers give one star twice as often (30% vs 20%).</li>
+<li>The gap that survives is <strong>cancellations and refunds</strong>: 19.1 mentions per 100 unhappy Swiggy reviews against 12.4 for Zomato. Customer support is Swiggy&#39;s most common complaint, but Zomato&#39;s unhappy users raise it just as often, so it is an industry problem rather than a competitive one.</li>
+<li>The same check on an older 2023 dataset gave the same lesson, which tells me the method matters more than any single finding.</li>
+</ul>
+</li>
+<li><strong>Honest positioning.</strong> Basic review tagging is already cheap (Appbot starts at $49 a month). ReviewRadar&#39;s angle is narrower: release-linked regression checks, benchmarks that control for rating mix, and a priority score a PM can defend in a review meeting.</li>
+</ul>
+<h2>1. Problem</h2>
+<p>Store reviews are the cheapest continuous customer signal a consumer app has. They are short, unstructured, sometimes written in Hinglish, and they bunch up around releases. That creates three common failures:</p>
+<ol>
+<li><strong>Regressions are noticed late</strong>, because nobody tracks topic share by app version.</li>
+<li><strong>Chronic problems get under-weighted</strong>, because they never spike.</li>
+<li><strong>Competitor comparisons are naive.</strong> Raw counts or raw rates ignore that two apps attract differently unhappy reviewers.</li>
+</ol>
+<p><strong>Job to be done.</strong> &quot;When I plan the next sprint, I want to know which customer problems are biggest, growing, or worse than a competitor&#39;s, so I can defend my priorities with evidence instead of opinion.&quot;</p>
+<h2>2. Research (secondary only)</h2>
+<h3>2a. Do product teams struggle to turn feedback into priorities?</h3>
+<p>Every survey below comes from a company that sells PM or feedback software, and none publishes its sampling method. I read them as directional.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Source</th>
+<th>Date and sample</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1 in 3 teams have no process for capturing feedback. Only 1 in 10 capture it from every source. 51% are confident their roadmap reflects user needs.</td>
+<td>Productboard and Product Collective, <em>Product Excellence Report</em></td>
+<td>2020, 700+ PMs</td>
+<td><span class="tag v">Verified</span> vendor survey</td>
+</tr>
+<tr>
+<td>More than half say decisions follow the highest-paid person&#39;s opinion more than data. 3 in 5 say the roadmap does not reflect segment needs.</td>
+<td>Productboard and Product Collective</td>
+<td>2021, 850+ respondents</td>
+<td><span class="tag v">Verified</span> vendor survey</td>
+</tr>
+<tr>
+<td>35% say customer feedback drove their best feature release</td>
+<td>Pendo and Product Collective</td>
+<td>Feb 2019, 300 North American PM leaders</td>
+<td><span class="tag v">Verified</span> vendor survey, old</td>
+</tr>
+<tr>
+<td>&quot;How do you go about evaluating the accuracy of the themes…?&quot; asked on a feedback-analytics launch</td>
+<td>Hacker News, Launch HN: Thematic</td>
+<td>Aug 2017</td>
+<td><span class="tag q">Qualitative</span></td>
+</tr>
+<tr>
+<td>Loud customers distort priorities. Segment feedback and look for recurring patterns.</td>
+<td>Mind the Product</td>
+<td>Feb 2025</td>
+<td><span class="tag q">Qualitative</span> opinion</td>
+</tr>
+</tbody></table></div>
+<h3>2b. What does academic work say about reviews as a signal?</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Finding</th>
+<th>Source</th>
+<th>Data</th>
+<th>Label</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Feedback bunches up in the days after a release. 52% of reviews cover more than one topic.</td>
+<td>Pagano and Maalej, RE 2013</td>
+<td>1.1M iOS reviews, 1,100 hand-coded</td>
+<td><span class="tag v">Verified</span></td>
+</tr>
+<tr>
+<td>Only 35.1% of reviews are &quot;informative&quot; on average. Manual reading took about 7.4 person-hours against 0.5 with tooling.</td>
+<td>Chen et al., AR-Miner, ICSE 2014</td>
+<td>4 Android apps</td>
+<td><span class="tag v">Verified</span></td>
+</tr>
+<tr>
+<td>A four-class taxonomy (bug, feature request, experience, rating) reaches 88 to 92% precision</td>
+<td>Maalej et al., <em>Requirements Engineering</em> 2016</td>
+<td>4,400 labelled reviews</td>
+<td><span class="tag v">Verified</span></td>
+</tr>
+<tr>
+<td>88% of apps get 20 or fewer reviews a day, so review mining helps less at low volume</td>
+<td>McIlroy et al., CACM 2017</td>
+<td>10,713 Google Play apps</td>
+<td><span class="tag v">Verified</span></td>
+</tr>
+<tr>
+<td>The best Hinglish sentiment system scored F1 75%</td>
+<td>SemEval-2020 Task 9 (SentiMix)</td>
+<td>About 20K Hinglish tweets</td>
+<td><span class="tag v">Verified</span></td>
+</tr>
+</tbody></table></div>
+<p><strong>What this changed in the product.</strong> Tags are multi-label because half of reviews mix topics. There is a version table because complaints follow releases. Alerts have volume gates because small apps are noisy. And there is a tag audit, because even published classifiers make mistakes and my keyword taxonomy is simpler than theirs.</p>
+<h3>2c. Which data did I use, and can I trust it?</h3>
+<p>I wanted reviews from 2025 or 2026. The Play Store, Kaggle and Hugging Face were not reachable from my build environment, so I could not scrape fresh reviews myself. Instead I looked for a public dataset with a documented method and found one.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>2026 dataset (default)</th>
+<th>2023 dataset (kept for comparison)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Source</td>
+<td><a href="https://github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews" target="_blank" rel="noopener">ba-capstone-app-reviews</a> on GitHub, commit 019dae4</td>
+<td><a href="https://github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence" target="_blank" rel="noopener">tanishka-anand compilation</a> of a Kaggle scrape</td>
+</tr>
+<tr>
+<td>Collection method</td>
+<td><code>google-play-scraper</code>, every English review from India posted 1 Apr to 20 Sep 2026, sorted newest first. Documented in the repo&#39;s <code>DATA_SOURCES.md</code>.</td>
+<td>Not documented</td>
+</tr>
+<tr>
+<td>Raw size</td>
+<td>78,562 Swiggy and 159,399 Zomato reviews</td>
+<td>58,588 reviews across both apps</td>
+</tr>
+<tr>
+<td>Used in the app</td>
+<td>228,274 reviews in 24 complete weeks (6 Apr to 20 Sep 2026)</td>
+<td>58,588 reviews in 26 weeks (23 Jan to 23 Jul 2023)</td>
+</tr>
+<tr>
+<td>How I checked it</td>
+<td>Row counts and date range match the upstream documentation exactly. Every review ID is unique. My pandas recount of average rating and one-star share matches the app.</td>
+<td>Row counts only</td>
+</tr>
+<tr>
+<td>Known problems</td>
+<td>A Play Store feed gap from 21 Apr to 5 May 2026, when positive reviews went missing. The app shades those weeks and leaves them out of spike baselines and release checks. 68% of reviews are three words or fewer.</td>
+<td>Swiggy&#39;s file is 65% one-star against 33% for Zomato, which points to different sampling</td>
+</tr>
+</tbody></table></div>
+<p>I did not collect this data and I cannot re-run the scrape myself, so I cite it as a third-party dataset. No reviewer names or photos are in either file.</p>
+<h3>2d. What did the 2026 reviews show? <span class="tag r">My analysis</span></h3>
+<p>Swiggy is &quot;your app&quot; and Zomato is the competitor. The window is the last 12 weeks (29 Jun to 20 Sep 2026) unless I say otherwise. Default taxonomy.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Observation</th>
+<th>Number</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reviews in window</td>
+<td>38,416 Swiggy and 60,484 Zomato</td>
+</tr>
+<tr>
+<td>Average written-review rating</td>
+<td>3.55 Swiggy and 3.94 Zomato</td>
+</tr>
+<tr>
+<td>One-star share</td>
+<td>30% Swiggy and 20% Zomato</td>
+</tr>
+<tr>
+<td>Topics where Swiggy looks behind on raw rates</td>
+<td>14 of 16</td>
+</tr>
+<tr>
+<td>Topics where Swiggy is behind among 1 to 2 star reviews (95% interval excludes zero)</td>
+<td>5 of 16: cancellations and refunds, late delivery, offers and coupons, app bugs and login, payments</td>
+</tr>
+<tr>
+<td>Biggest adjusted gap</td>
+<td>Cancellations and refunds, 19.1 vs 12.4 mentions per 100 unhappy reviews (±0.9)</td>
+</tr>
+<tr>
+<td>Customer support among unhappy reviews</td>
+<td>22.4 Swiggy vs 21.5 Zomato (±1.0), no clear gap</td>
+</tr>
+<tr>
+<td>Where Swiggy is ahead among unhappy reviews</td>
+<td>Cash on delivery, fees and pricing, food quality, membership</td>
+</tr>
+<tr>
+<td>Top three priorities at default weights</td>
+<td>Customer support (7.5% of reviews), cancellations and refunds (6.4%), late delivery (6.2%)</td>
+</tr>
+<tr>
+<td>Same ranking with upvote weighting on</td>
+<td>Top five unchanged, so a few loud reviews are not driving it</td>
+</tr>
+<tr>
+<td>Release checks for Swiggy</td>
+<td>v4.111 (first seen 17 Jun): missing or wrong items rose from 1.3% to 2.0% of reviews (z = 3.8). v4.113 (17 Jul): app bugs and login rose from 1.0% to 1.5% (z = 3.3).</td>
+</tr>
+<tr>
+<td>Release checks for Zomato</td>
+<td>Average rating fell with each version from v19.5 (4.27) to v19.8 (3.99). Customer support rose in v19.6 (2.5% to 4.0%, z = 9.1) and again in v19.8 (3.6% to 4.4%, z = 6.0).</td>
+</tr>
+<tr>
+<td>Zomato volume and mood</td>
+<td>Weekly reviews fell from about 9,700 in April to about 4,500 to 5,000 by September. The 1 to 2 star share rose from 16.1% in the first 12 weeks to 22.0% in the last 12.</td>
+</tr>
+<tr>
+<td>Spikes in the last two weeks</td>
+<td>None for Swiggy. Its complaints are steady and long-running.</td>
+</tr>
+<tr>
+<td>Very short reviews</td>
+<td>68% are three words or fewer (&quot;good&quot;, &quot;nice app&quot;). Only 20% of all reviews match any topic, so the useful text lives in about a quarter of reviews.</td>
+</tr>
+</tbody></table></div>
+<p><strong>What a PM at Swiggy could take from this.</strong> Refunds and cancellations are where Swiggy loses to Zomato among unhappy customers, and the gap is large and stable across both windows. Support is the most-mentioned issue, but fixing it would not differentiate Swiggy because Zomato has the same problem. The two release regressions are small but statistically clear, and both are cheap to investigate. <span class="tag a">Assumption</span> on what a Swiggy PM would prioritise. I have no inside data on cost or impact.</p>
+<p><strong>Qualitative themes from reading reviews</strong> <span class="tag q">Qualitative</span></p>
+<ul>
+<li>The most-upvoted Swiggy review in the window (2,590 upvotes, Aug 2026) describes insects in food and a support reply that offered no fix. It sits at the overlap of food quality and support, which is why tags are multi-label.</li>
+<li>Refund complaints often mention being charged a cancellation fee after a long delay, which points at policy as much as operations.</li>
+<li>Forced rating prompts still appear, so the <em>Notifications and rating prompts</em> topic stays in the taxonomy.</li>
+</ul>
+<p><strong>Hinglish.</strong> I expected code-mixed reviews to be the headline problem. In the 2026 data, 7.1% of reviews longer than five words contain common Hinglish words such as <em>nahi</em>, <em>hai</em> or <em>bakwas</em>, and only 0.33% contain Devanagari, probably because the scrape asked for English. Hinglish keywords are supported, but I treat this as hygiene rather than the pitch. <span class="tag r">My analysis</span> using a simple word list, so this is a rough estimate.</p>
+<h3>2e. Does the method hold on a second dataset?</h3>
+<p>The 2023 data came from a different, undocumented collection, so I do not compare the two years directly. What I can compare is whether the raw-versus-adjusted lesson holds.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>2023 (Swiggy, 12 weeks)</th>
+<th>2026 (Swiggy, 12 weeks)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Behind on raw rates</td>
+<td>9 of 16</td>
+<td>14 of 16</td>
+</tr>
+<tr>
+<td>Behind among 1 to 2 star reviews</td>
+<td>2 of 16</td>
+<td>5 of 16</td>
+</tr>
+<tr>
+<td>One-star share, Swiggy vs Zomato</td>
+<td>63% vs 32%</td>
+<td>30% vs 20%</td>
+</tr>
+</tbody></table></div>
+<p>In both datasets the raw view overstated the gaps by a factor of two or more. That is the finding I would bring to an interview, because it is about how a PM should read evidence, not about Swiggy.</p>
+<h2>3. Users</h2>
+<ul>
+<li><strong>Primary.</strong> A PM or APM at a Series A to C Indian consumer app who owns a surface and runs weekly prioritisation without a dedicated researcher or analyst. <span class="tag a">Assumption</span> inferred from job descriptions that ask PMs to be &quot;the voice of the customer&quot; and &quot;data-driven&quot; (Flipkart, PhonePe and Razorpay postings read in Oct 2026).</li>
+<li><strong>Secondary.</strong> A CX lead who needs early warning after a release.</li>
+<li><strong>Not for.</strong> Apps with only a handful of reviews a day. McIlroy et al. show most apps fall in this group, and ReviewRadar says &quot;not enough data&quot; instead of inventing trends.</li>
+</ul>
+<h2>4. Competitors</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Product</th>
+<th>What it does well</th>
+<th>Cheapest public price (Oct 2026)</th>
+<th>Gap for my user</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Appbot</strong></td>
+<td>Review topics, sentiment, competitor sources, translation</td>
+<td>$49 a month for 1 user</td>
+<td>Closest and cheap, but not positioned on release regressions or explainable priority</td>
+</tr>
+<tr>
+<td><strong>AppFollow</strong></td>
+<td>Review replies, ASO, workflows</td>
+<td>Free tier, paid tiers vary (third-party tracker, not verified)</td>
+<td>Built for reply operations</td>
+</tr>
+<tr>
+<td><strong>Productboard Pulse</strong></td>
+<td>AI topics and trends from Play and App Store reviews inside a PM suite</td>
+<td>Not public. Business plan needs at least 5 makers.</td>
+<td>Seat minimum and suite overhead</td>
+</tr>
+<tr>
+<td><strong>Enterpret</strong></td>
+<td>Adaptive taxonomy across every feedback source</td>
+<td>Contact sales</td>
+<td>Enterprise onboarding</td>
+</tr>
+<tr>
+<td><strong>Unwrap.ai</strong></td>
+<td>Customer intelligence and alerts</td>
+<td>From $24,000 a year</td>
+<td>Beyond an early-stage budget</td>
+</tr>
+<tr>
+<td><strong>Thematic</strong></td>
+<td>Theme discovery and dashboards</td>
+<td>$2,000 a month (Capterra listing)</td>
+<td>Price and setup effort</td>
+</tr>
+<tr>
+<td><strong>SentiSum</strong></td>
+<td>Support and review analytics for CX teams</td>
+<td>From $100,000 a year</td>
+<td>Enterprise CX buyer</td>
+</tr>
+<tr>
+<td><strong>Canny</strong></td>
+<td>Feature-request boards</td>
+<td>Free, Pro at $79 a month</td>
+<td>Users must post requests, so no review mining</td>
+</tr>
+<tr>
+<td><strong>Spreadsheet and reading</strong></td>
+<td>Free and flexible</td>
+<td>None</td>
+<td>Slow, anecdotal, no trends</td>
+</tr>
+</tbody></table></div>
+<p>Prices come from vendor pages or listings checked in October 2026 <span class="tag v">Verified</span>.</p>
+<p><strong>Market signals.</strong> MonkeyLearn went to Medallia (2022), data.ai to Sensor Tower (2024) and Kraftful to Amplitude (2025). Review analytics keeps getting absorbed into bigger suites. Several student projects on GitHub also analyse Zomato and Swiggy reviews, so the idea alone is not new.</p>
+<p><strong>Positioning.</strong> For a PM who has outgrown reading reviews by hand but cannot justify an enterprise tool, ReviewRadar answers three questions that cheaper tools do not put first.</p>
+<ul>
+<li>Did the last release make anything worse?</li>
+<li>Are we really behind the competitor once rating mix is controlled for?</li>
+<li>What should we fix first, and which reviews prove it?</li>
+</ul>
+<h2>5. User journey</h2>
+<ol>
+<li><strong>Load.</strong> Use the built-in 2026 Swiggy and Zomato data, or export your own app and a competitor with the open-source <code>google-play-scraper</code> and drop in the CSVs. Nothing is uploaded.</li>
+<li><strong>Orient.</strong> Overview leads with one sentence that answers &quot;what matters most right now&quot;, then shows volume, rating, negative share, taxonomy coverage, spike alerts and plain-language insights.</li>
+<li><strong>Check releases.</strong> Trends compares each version&#39;s topic share with the three before it and flags only statistically clear changes.</li>
+<li><strong>Compare fairly.</strong> Competitors shows mentions per 100 reviews with 95% intervals and a toggle to compare only unhappy reviews.</li>
+<li><strong>Decide.</strong> Prioritize ranks topics by reach, severity, momentum and the adjusted competitive gap. The PM sets strategy weights and effort, reads the evidence, and adds items to Now, Next or Later.</li>
+<li><strong>Trust-check.</strong> Tag audit samples 25 tagged reviews. The PM marks each tag right or wrong, and precision appears per topic with an interval once there are at least 10 judgments.</li>
+<li><strong>Share.</strong> Copy the roadmap as Markdown with the metric and a real quote attached.</li>
+</ol>
+<h2>6. PRD (MVP)</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>User story</th>
+<th>Acceptance criteria</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>R1</td>
+<td>As a PM, I can load reviews for my app and competitors</td>
+<td>The built-in dataset loads in under 5 seconds on desktop broadband. CSV import accepts google-play-scraper and Kaggle column names. An <code>App</code> column splits apps. Reviewer names and images are never read.</td>
+</tr>
+<tr>
+<td>R2</td>
+<td>As a PM, reviews are tagged into topics I control</td>
+<td>Editable taxonomy with multi-label tags. Keywords match whole words plus common endings, and <code>*</code> marks a prefix. A coverage KPI and an Untagged filter show what the taxonomy misses.</td>
+</tr>
+<tr>
+<td>R3</td>
+<td>As a PM, I am warned when a topic spikes</td>
+<td>Alert when the last two weeks&#39; share of reviews is more than 2 standard deviations above the topic&#39;s baseline with at least 4 mentions a week. Known data-gap weeks are excluded from the baseline.</td>
+</tr>
+<tr>
+<td>R4</td>
+<td>As a PM, I can tie changes to releases</td>
+<td>Versions grouped by major.minor with at least 40 reviews. Two-proportion z-test against the previous three versions. Only changes with |z| ≥ 2 are shown.</td>
+</tr>
+<tr>
+<td>R5</td>
+<td>As a PM, I can compare with competitors fairly</td>
+<td>Rates per 100 reviews with 95% intervals, a 1 to 2 star comparison, and an adjusted gap inside the priority score when each app has at least 50 unhappy reviews</td>
+</tr>
+<tr>
+<td>R6</td>
+<td>As a PM, I get a ranked list I can defend</td>
+<td>Visible formula, adjustable weights, confidence by sample size, an effort divisor, evidence quotes and optional upvote weighting</td>
+</tr>
+<tr>
+<td>R7</td>
+<td>As a PM, I can carry decisions into planning</td>
+<td>Now, Next and Later board with a suggested success metric per topic. The Markdown export names the data source.</td>
+</tr>
+<tr>
+<td>R8</td>
+<td>As a PM, I know how far to trust the tags</td>
+<td>Tag audit with per-topic precision and Wilson 95% intervals. A topic is marked &quot;fix keywords&quot; when its upper bound is below 80%.</td>
+</tr>
+</tbody></table></div>
+<p><strong>Non-goals for the MVP.</strong> Reply management and ASO (Appbot and AppFollow own these), support-ticket ingestion, multi-user workspaces and live store connectors.</p>
+<h2>7. MVP scope and trade-offs</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>I chose</th>
+<th>Over</th>
+<th>What it costs</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>A keyword taxonomy</td>
+<td>An LLM classifier</td>
+<td>Misses paraphrase and sarcasm. In return it is free, instant, private and auditable, and the tag audit measures how wrong it is.</td>
+</tr>
+<tr>
+<td>Share-based spike alerts</td>
+<td>Count-based alerts</td>
+<td>Slower to react when volume and share rise together. Zomato&#39;s weekly reviews halved between April and September 2026, and Swiggy&#39;s ranged from 1,114 (inside the feed gap) to 3,992 a week, so counts would have been mostly noise.</td>
+</tr>
+<tr>
+<td>Comparing unhappy reviews with unhappy reviews</td>
+<td>Raw rates</td>
+<td>Smaller samples and wider intervals. It removed most of the false gaps in both datasets.</td>
+</tr>
+<tr>
+<td>Running everything in the browser</td>
+<td>A backend with accounts</td>
+<td>No team sharing yet. Imported reviews never leave the PM&#39;s machine, which matters for a first trial.</td>
+</tr>
+<tr>
+<td>A documented third-party dataset</td>
+<td>Scraping it myself</td>
+<td>I depend on someone else&#39;s collection. I verified it against its own documentation and kept every caveat visible in the app.</td>
+</tr>
+<tr>
+<td>Leaving out a live Play Store connector</td>
+<td>Convenience</td>
+<td>Users must export CSVs. It avoids scraping-terms risk and maintenance until the value is proven.</td>
+</tr>
+</tbody></table></div>
+<h2>8. Prioritizing ReviewRadar&#39;s own features (RICE)</h2>
+<p>Reach is the number of PMs in an imagined pilot of 20. Impact (0.5 to 3), confidence and effort are my estimates <span class="tag a">Assumption</span>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Reach</th>
+<th>Impact</th>
+<th>Confidence</th>
+<th>Effort (weeks)</th>
+<th>RICE</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Rating-mix-adjusted benchmark</td>
+<td>16</td>
+<td>2</td>
+<td>80%</td>
+<td>0.5</td>
+<td>51</td>
+<td>MVP</td>
+</tr>
+<tr>
+<td>Evidence-linked prioritisation</td>
+<td>20</td>
+<td>3</td>
+<td>80%</td>
+<td>1.5</td>
+<td>32</td>
+<td>MVP</td>
+</tr>
+<tr>
+<td>Tag audit</td>
+<td>20</td>
+<td>1</td>
+<td>80%</td>
+<td>0.5</td>
+<td>32</td>
+<td>MVP</td>
+</tr>
+<tr>
+<td>Release regression check</td>
+<td>20</td>
+<td>2</td>
+<td>70%</td>
+<td>1</td>
+<td>28</td>
+<td>MVP</td>
+</tr>
+<tr>
+<td>LLM topic discovery for untagged reviews</td>
+<td>20</td>
+<td>2</td>
+<td>50%</td>
+<td>2</td>
+<td>10</td>
+<td>v2</td>
+</tr>
+<tr>
+<td>Weekly Slack digest</td>
+<td>12</td>
+<td>1</td>
+<td>50%</td>
+<td>1</td>
+<td>6</td>
+<td>v2</td>
+</tr>
+<tr>
+<td>Live Play Store connector</td>
+<td>20</td>
+<td>1</td>
+<td>60%</td>
+<td>3</td>
+<td>4</td>
+<td>v2</td>
+</tr>
+</tbody></table></div>
+<h2>9. Success metrics</h2>
+<ul>
+<li><strong>North Star.</strong> Roadmap items per active team per month that carry linked review evidence.</li>
+<li><strong>Activation.</strong> Share of new users who load their own CSV and open Prioritize in the first session.</li>
+<li><strong>Time to first decision.</strong> Minutes from loading data to the first roadmap item. Target under 10 minutes <span class="tag a">Assumption</span>.</li>
+<li><strong>Trust.</strong> Audited tag precision of at least 85% on the top five topics, with at least 30 judgments each.</li>
+<li><strong>Retention.</strong> Share of teams that come back weekly for four weeks.</li>
+<li><strong>Guardrail.</strong> Share of ranked items a PM marks as obviously wrong stays under 10%.</li>
+</ul>
+<h2>10. Experiment plan</h2>
+<p>None of these has been run yet. Each is small enough for one person to run with peers.</p>
+<ol>
+<li><strong>Does the adjusted benchmark change decisions?</strong> Give 10 to 20 PM peers the same Swiggy and Zomato data. Half see raw rates and half see the unhappy-review view. Primary metric is agreement with a reference list of real gaps. Hypothesis: the adjusted group names fewer and more defensible gaps.</li>
+<li><strong>Default weights.</strong> Test a reach-heavy default against a severity-heavy one. Metric is how often users change the weights before adding to the roadmap. Fewer changes means a better default.</li>
+<li><strong>Answer-first summary versus charts only.</strong> Metric is click-through from Overview to Prioritize. Guardrail is that audited precision does not drop, because moving faster is worse if it means trusting bad tags.</li>
+</ol>
+<h2>11. Launch strategy</h2>
+<ul>
+<li><strong>Proof first.</strong> Publish a short teardown, &quot;What 228,274 Swiggy and Zomato reviews say, and why raw benchmarks mislead&quot;, with the method and data caveats shown.</li>
+<li><strong>Beta.</strong> Invite 10 to 20 PMs and APMs from product communities and college PM clubs, free.</li>
+<li><strong>Launch gate.</strong> At least 60% of beta users add an evidence-linked item in week 1, and at least 40% return in week 2 <span class="tag a">Assumption</span>.</li>
+<li><strong>Pricing hypothesis.</strong> Free for one app, paid for competitor tracking and digests, priced below Appbot&#39;s mid tier. To be tested with willingness-to-pay questions, not assumed.</li>
+</ul>
+<h2>12. Limits</h2>
+<ul>
+<li><strong>Keyword tags miss paraphrase and sarcasm.</strong> I have not run a full human audit yet. The tool makes one take about 20 minutes, and until someone does it the app shows no precision figure.</li>
+<li><strong>Most reviews are too short to tag.</strong> Two thirds are three words or fewer, so topic shares describe the reviewers who wrote something, not every reviewer.</li>
+<li><strong>Release attribution is approximate.</strong> Reviews of a version include people who updated late.</li>
+<li><strong>Public reviews are self-selected.</strong> Read them for direction, not as population estimates. Written-review ratings sit below the public store rating.</li>
+<li><strong>I do not own the data.</strong> It is a third-party scrape with a reported feed gap, and I could not re-collect it.</li>
+<li><strong>The rider-apps dataset is simulated.</strong> It exists to show the rider-side scenario that led to my second project, Kamai.</li>
+</ul>
+<h2>13. What I got wrong along the way</h2>
+<ul>
+<li><strong>Spike alerts.</strong> My first version, built on simulated data, counted mentions. On real data, changing review volume produced false alerts, so I switched to share of reviews.</li>
+<li><strong>The competitor view.</strong> I first presented raw gaps as findings, then noticed the one-star mix. The adjusted view reversed the customer-support conclusion in 2023 and turned it into &quot;no clear gap&quot; in 2026.</li>
+<li><strong>Keyword matching.</strong> Keywords first matched any word that <em>started</em> with them, so &quot;late&quot; matched &quot;latest&quot; and a fees complaint showed up as late-delivery evidence. Keywords now match whole words plus common endings, with <code>*</code> for deliberate prefixes. That bug is why the tag audit exists.</li>
+<li><strong>The data gap.</strong> On first load of the 2026 data, Swiggy&#39;s rating chart showed a sudden crash in late April. It turned out to be missing positive reviews, documented upstream. I now shade those weeks and exclude them from baselines rather than let the tool report a crisis that did not happen.</li>
+<li><strong>Hinglish.</strong> I assumed it would be the differentiator. The data did not support that, so I demoted it.</li>
+</ul>
+<h2>14. Next steps</h2>
+<ol>
+<li>Run the tag audit on 30 reviews per top topic and publish the precision table.</li>
+<li>Run experiment 1 with 10 peers and report the result, whatever it is.</li>
+<li>Add LLM-suggested topics for long untagged reviews, with the keyword taxonomy kept as the auditable base.</li>
+</ol>
+<h2>Sources</h2>
+<ul>
+<li>Productboard and Product Collective, 2020 Product Excellence Report (PDF): <a href="https://www.productboard.com/wp-content/uploads/2020/10/stateofproductexcellence.pdf" target="_blank" rel="noopener">https://www.productboard.com/wp-content/uploads/2020/10/stateofproductexcellence.pdf</a></li>
+<li>Productboard and Product Collective, 2021 Product Excellence Report (PDF): <a href="https://info.productboard.com/rs/128-JHR-871/images/PE%20Survey%202021.pdf" target="_blank" rel="noopener">https://info.productboard.com/rs/128-JHR-871/images/PE%20Survey%202021.pdf</a></li>
+<li>MarTech Series on Pendo&#39;s State of Product Leadership, 13 Feb 2019: <a href="https://martechseries.com/sales-marketing/pendo-releases-2nd-annual-state-product-leadership-survey-revealing-significant-shifts-traditional-product-management-roles-focus/" target="_blank" rel="noopener">https://martechseries.com/sales-marketing/pendo-releases-2nd-annual-state-product-leadership-survey-revealing-significant-shifts-traditional-product-management-roles-focus/</a></li>
+<li>Mind the Product, &quot;Why you should ignore your loudest customers&quot;, 4 Feb 2025: <a href="https://www.mindtheproduct.com/why-you-should-ignore-your-loudest-customers/" target="_blank" rel="noopener">https://www.mindtheproduct.com/why-you-should-ignore-your-loudest-customers/</a></li>
+<li>Launch HN: Thematic, Aug 2017: <a href="https://news.ycombinator.com/item?id=15020712" target="_blank" rel="noopener">https://news.ycombinator.com/item?id=15020712</a></li>
+<li>Pagano and Maalej, RE 2013: <a href="https://ase.in.tum.de/lehrstuhl_1/images/people/pagano/RE2013PaganoMaalej.pdf" target="_blank" rel="noopener">https://ase.in.tum.de/lehrstuhl_1/images/people/pagano/RE2013PaganoMaalej.pdf</a></li>
+<li>Chen et al., AR-Miner, ICSE 2014: <a href="https://ink.library.smu.edu.sg/sis_research/2323" target="_blank" rel="noopener">https://ink.library.smu.edu.sg/sis_research/2323</a></li>
+<li>Maalej et al., Requirements Engineering 2016 (annotated copy): <a href="https://cs.uwaterloo.ca/~dberry/ATRE/Slides/HairyToolsTalk/DanCommentedMaalejEtAl.pdf" target="_blank" rel="noopener">https://cs.uwaterloo.ca/~dberry/ATRE/Slides/HairyToolsTalk/DanCommentedMaalejEtAl.pdf</a></li>
+<li>McIlroy et al., CACM, Nov 2017: <a href="https://sail.cs.queensu.ca/data/pdfs/2017_UserReviewsOfTopMobileAppsInAppleAndGoogleAppStores.pdf" target="_blank" rel="noopener">https://sail.cs.queensu.ca/data/pdfs/2017_UserReviewsOfTopMobileAppsInAppleAndGoogleAppStores.pdf</a></li>
+<li>Patwa et al., SemEval-2020 Task 9: <a href="https://arxiv.org/abs/2008.04277" target="_blank" rel="noopener">https://arxiv.org/abs/2008.04277</a></li>
+<li>Appbot plans: <a href="https://appbot.co/plans/" target="_blank" rel="noopener">https://appbot.co/plans/</a> · Unwrap pricing: <a href="https://www.unwrap.ai/pricing" target="_blank" rel="noopener">https://www.unwrap.ai/pricing</a> · Productboard pricing: <a href="https://www.productboard.com/pricing/" target="_blank" rel="noopener">https://www.productboard.com/pricing/</a> · Canny pricing: <a href="https://canny.io/pricing" target="_blank" rel="noopener">https://canny.io/pricing</a> · SentiSum pricing: <a href="https://www.sentisum.com/pricing" target="_blank" rel="noopener">https://www.sentisum.com/pricing</a> · Thematic on Capterra: <a href="https://www.capterra.co.uk/software/159338/thematic" target="_blank" rel="noopener">https://www.capterra.co.uk/software/159338/thematic</a> · Enterpret pricing: <a href="https://www.enterpret.com/pricing" target="_blank" rel="noopener">https://www.enterpret.com/pricing</a></li>
+<li>Productboard Pulse launch (CIO Dive press release), 29 Oct 2024: <a href="https://www.ciodive.com/press-release/20241028-productboard-launches-ai-powered-productboard-pulse-to-integrate-voice-of-c-1/" target="_blank" rel="noopener">https://www.ciodive.com/press-release/20241028-productboard-launches-ai-powered-productboard-pulse-to-integrate-voice-of-c-1/</a></li>
+<li>TechCrunch, Sensor Tower acquires data.ai, 18 Mar 2024: <a href="https://techcrunch.com/2024/03/18/app-analytics-firm-sensor-tower-acquires-rival-data-ai/" target="_blank" rel="noopener">https://techcrunch.com/2024/03/18/app-analytics-firm-sensor-tower-acquires-rival-data-ai/</a></li>
+<li>Business Wire, Amplitude acquires Kraftful, 10 Jul 2025: <a href="https://www.businesswire.com/news/home/20250710876791/en/Amplitude-Acquires-Kraftful-to-Accelerate-AI-Strategy" target="_blank" rel="noopener">https://www.businesswire.com/news/home/20250710876791/en/Amplitude-Acquires-Kraftful-to-Accelerate-AI-Strategy</a></li>
+<li>2026 dataset and its method notes: <a href="https://github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews" target="_blank" rel="noopener">https://github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews</a> (see <code>DATA_SOURCES.md</code>)</li>
+<li>2023 dataset: <a href="https://github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence" target="_blank" rel="noopener">https://github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence</a> (from Kaggle <code>saloni1712/zomato-and-swiggy-play-store-reviews</code>)</li>
+</ul>
+<p>Full research notes, with every figure&#39;s sample size and method, are in <code>research/reviewradar_secondary_research.md</code>.</p>
+
+<!--CASE:END--></article>
+    </section>
+    </div>
+  </main>
+</div>
+
+<dialog id="importDlg">
+  <form method="dialog" id="importForm">
+    <h2>Import your own reviews</h2>
+    <p>Load one CSV per app. ReviewRadar reads the columns <span class="num">content</span>, <span class="num">score</span>, <span class="num">at</span> and (optionally) <span class="num">reviewCreatedVersion</span>, which is what the open-source <span class="num">google-play-scraper</span> Python package exports (Kaggle-style <span class="num">review_description, rating, review_date, appVersion, App</span> also work). An <span class="num">App</span> column splits one file into several apps. Otherwise each file is one app named after the file. Columns such as <span class="num">userName</span> or <span class="num">userImage</span> are never read.</p>
+    <pre class="code">pip install google-play-scraper pandas
+from google_play_scraper import reviews, Sort
+import pandas as pd
+rows, _ = reviews("PACKAGE.ID", lang="en", country="in",
+                  sort=Sort.NEWEST, count=3000)
+pd.DataFrame(rows).to_csv("myapp.csv", index=False)</pre>
+    <div class="field"><label for="fileIn">CSV files</label><input type="file" id="fileIn" accept=".csv,text/csv" multiple></div>
+    <div id="importMsg" class="muted"></div>
+    <div class="filters" style="justify-content:flex-end"><button class="btn" value="cancel">Close</button><button class="btn" type="button" id="resetSample">Back to built-in real data</button></div>
+  </form>
+</dialog>
+
+<dialog id="taxDlg">
+  <form method="dialog" id="taxForm">
+    <h2>Topic taxonomy</h2>
+    <p class="muted">One topic per line: <span class="num">Name | complaint or request | keyword, keyword</span>. Keywords match whole words plus common endings (delay → delayed, delays). End a keyword with * to match any word that starts with it (deactivat* → deactivation). Any language or script works. Untagged reviews show how much your taxonomy misses.</p>
+    <textarea id="taxText" spellcheck="false" aria-label="Taxonomy definition"></textarea>
+    <div id="taxMsg" class="muted"></div>
+    <div class="filters" style="justify-content:flex-end"><button class="btn" value="cancel">Cancel</button><button class="btn" type="button" id="taxReset">Restore defaults</button><button class="btn primary" type="button" id="taxSave">Apply</button></div>
+  </form>
+</dialog>
+
+<script src="vendor/chart.umd.min.js"></script>
+<script src="vendor/papaparse.min.js"></script>
+<script>
+"use strict";
+/* ---------- utilities ---------- */
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=(n,d=0)=>Number(n).toLocaleString("en-IN",{minimumFractionDigits:d,maximumFractionDigits:d});
+const pct=(n,d=0)=>fmt(n*100,d)+"%";
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+const sd=a=>{const m=mean(a);return Math.sqrt(mean(a.map(x=>(x-m)**2)))};
+function store(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem(k));localStorage.setItem(k,JSON.stringify(v))}catch(e){return null}}
+function toast(msg){const t=document.createElement("div");t.className="toast";t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2200)}
+function rng(seed){return function(){seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function poisson(lam,r){let L=Math.exp(-lam),k=0,p=1;do{k++;p*=r()}while(p>L);return k-1}
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* ---------- taxonomy ---------- */
+const DEFAULT_TAX={
+sim:`Payout delays | complaint | payout, payment not, not received, nahi aaya, pending payment, weekly payment, settlement, paisa nahi mila
+Incentive rules | complaint | incentive, target, bonus, milestone
+Low pay per order | complaint | per order, rate cut, kam paisa, low pay, earning kam, kamai kam, too low
+ID blocks | complaint | blocked, block kar, deactivat*, suspend, id band
+App crashes & login | complaint | crash, hang, otp, login, freez*, lag, stuck, not opening
+GPS & distance | complaint | gps, location, distance, route, galat km, wrong km
+Restaurant wait time | complaint | waiting, wait at, pickup, intezaar, restaurant
+Support quality | complaint | support, helpline, ticket, chat, call center, no response
+Earnings breakdown | request | breakdown, statement, trip-wise, hisab, detail of earning, per km detail
+Fuel allowance | request | fuel, petrol, charging, ev allowance
+Insurance & safety | request | insurance, accident, safety, medical`,
+real:`Late delivery | complaint | late, delay, took long, taking long, too long, hour, hrs, waiting, wait for, not on time, on time, never delivered, not delivered, still not, der se, time pe nahi
+Cancellations & refunds | complaint | refund, cancel, money back, cancellation, paisa wapas
+Customer support | complaint | customer care, customer support, customer service, support, chat, executive, helpline, ticket, no response, not responding, customer interaction, agent
+Missing or wrong items | complaint | missing, wrong item, wrong order, wrong food, wrong dish, incomplete, not received, spill, leak, damaged, half order
+Food quality & hygiene | complaint | cold, stale, quality, hair, insect, cockroach, taste, tasteless, undercooked, hygien*, smell, food poisoning, rotten, thanda
+Fees & pricing | complaint | delivery fee, delivery charge, platform fee, packaging, surge, expensive, costly, price, charges, tax, gst, overpriced, too much money, charge, mehenga, mehnga
+Membership (Gold / One) | complaint | gold, swiggy one, membership, subscription
+Offers & coupons | complaint | coupon, offer, discount, promo, cashback, deal
+Payments | complaint | payment, upi, debited, deducted, transaction, wallet, paytm
+App bugs & login | complaint | crash, bug, glitch, not working, not opening, login, log in, otp, error, hang, loading, freez*, stuck, update
+Delivery partner conduct | complaint | delivery boy, delivery guy, delivery partner, delivery person, delivery executive, rider, valet, rude, behaviour, behavior, misbehav*
+Address & location | complaint | address, location, gps, map, wrong place, serviceable
+Restaurant availability | complaint | outlet closed, restaurant closed, not available, unavailable, no restaurant, closed
+Notifications & rating prompts | complaint | notification, spam, rate me, rating, let me in, pop up, popup
+Feature requests | request | please add, add option, add an option, should add, should have, feature, would be great, would be nice, option to, allow us, i wish, need an option
+Cash on delivery | request | cash on delivery, pay on delivery, cod option, cod not, cod is`,
+import:`Crashes & bugs | complaint | crash, bug, glitch, not working, not opening, error, hang, freez*, stuck
+Login & OTP | complaint | login, log in, otp, sign in, password, verification
+Payments | complaint | payment, upi, debited, deducted, transaction, failed, wallet
+Refunds | complaint | refund, money back, cancel
+Customer support | complaint | customer care, customer support, support, no response, helpline, ticket, chat
+Fees & pricing | complaint | fee, charge, expensive, costly, price, hidden
+Performance | complaint | slow, lag, loading, battery, heat
+Ads & notifications | complaint | ads, advertis*, notification, spam
+Account blocked | complaint | blocked, suspend, deactivat*, banned
+Usability | complaint | confusing, difficult, hard to use, ui, interface, complicated
+Feature requests | request | please add, add option, should add, feature, would be nice, option to, i wish`};
+let TAX=[];
+const escRe=x=>x.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function parseTax(txt){
+  const out=[];
+  txt.split(/\n/).map(l=>l.trim()).filter(Boolean).forEach((l,i)=>{
+    const p=l.split("|").map(s=>s.trim());
+    if(p.length<3||!p[0])throw new Error(`Line ${i+1} needs three parts separated by "|".`);
+    const kind=p[1].toLowerCase().startsWith("req")?"request":"complaint";
+    const kws=p[2].split(",").map(s=>s.trim().toLowerCase()).filter(Boolean);
+    if(!kws.length)throw new Error(`Line ${i+1} has no keywords.`);
+    // whole words plus common endings ("delay" matches "delayed", but "late" does not match "latest");
+    // a trailing * makes a deliberate prefix ("deactivat*" matches "deactivated" and "deactivation")
+    const pat=kws.map(k=>k.endsWith("*")?escRe(k.slice(0,-1)):escRe(k)+"(?:s|es|d|ed|ing|led|ling)?(?![\\p{L}\\p{N}])");
+    out.push({id:"t"+i,name:p[0],kind,kws:kws.map(k=>k.replace(/\*$/,"")),rx:new RegExp("(?:^|[^\\p{L}\\p{N}])(?:"+pat.join("|")+")","iu")});
+  });
+  if(!out.length)throw new Error("Add at least one topic.");
+  return out;
+}
+
+/* ---------- sentiment (lexicon + rating blend; English + Hinglish) ---------- */
+const POS=["good","great","best","nice","love","helpful","fast","easy","thanks","thank you","smooth","accha","acha","badhiya","mast","sahi","happy","improved","super","osm","awesome"];
+const NEG=["worst","bad","bakwas","bekar","fraud","cheat","pathetic","not received","nahi","delay","crash","blocked","useless","loot","problem","issue","slow","never","waste","poor","angry","stuck","galat","wrong","no response","bekaar","ghatiya","horrible","pending"];
+function lex(t){let p=0,n=0;POS.forEach(w=>{if(t.includes(w))p++});NEG.forEach(w=>{if(t.includes(w))n++});return (p-n)/(p+n+1)}
+function sentiment(text,rating){return clamp(.65*((rating-3)/2)+.35*lex(text.toLowerCase()),-1,1)}
+
+/* ---------- simulated dataset ---------- */
+const T={
+ payout:[["Weekly payment nahi aaya, 3 din se pending payment dikha raha hai",[1,2]],["Payout delayed again this week. Rent is due and support says wait",[1,2]],["Paisa nahi mila abhi tak, settlement kab hoga?",[1,1]],["Payment not received for last week orders. Very bad",[1,2]],["Payout always late on Monday, please fix",[2,3]]],
+ incentive:[["They changed incentive target overnight, 22 orders se 28 kar diya",[1,2]],["Bonus milestone is impossible now, target bahut zyada hai",[1,2]],["Incentive not credited even after completing target",[1,1]],["Weekend bonus rules are confusing, nobody explains the target",[2,3]]],
+ lowpay:[["Per order sirf 18-20 rupees, petrol ka kharcha bhi nahi nikalta. Kamai kam ho gayi",[1,2]],["Rate cut again. Low pay for long distance orders",[1,2]],["Earning kam hai, 10 ghante kaam karke bhi 600 nahi bante",[1,2]],["Pay per order is too low for rain days",[2,2]]],
+ idblock:[["My ID blocked without reason after a customer complaint",[1,1]],["ID band kar diya, support koi jawab nahi de raha",[1,1]],["Account deactivated for low rating, no chance to explain",[1,1]]],
+ crash:[["After update app crash ho raha hai during delivery",[1,2]],["OTP not coming, login nahi ho raha since morning",[1,1]],["App hang hota hai at pickup screen, lost 3 orders",[1,2]],["App freezes when marking delivered, very slow",[1,2]],["Not opening after new update, stuck on loading",[1,1]]],
+ gps:[["GPS location wrong, distance galat km dikhata hai",[1,2]],["Route shows 3 km but actual 6 km, distance pay is wrong",[1,2]],["Map location of customer is always wrong",[2,3]]],
+ wait:[["Restaurant pe 30 min waiting, koi wait time pay nahi",[1,2]],["Pickup takes forever at restaurant, we lose next orders",[2,2]],["Intezaar karte karte slot khatam ho jata hai",[2,3]]],
+ support:[["Support chat gives copy paste replies, no response on ticket",[1,2]],["Helpline call center never connects",[1,1]],["Raised ticket 5 days ago, still no response",[1,2]]],
+ breakdown:[["Please add trip-wise earning breakdown, hisab samajh nahi aata",[3,4]],["Need per km detail and statement of earnings for each day",[3,4]],["Give detail of earning: base, distance, incentive separately",[2,4]],["Hisab clear nahi hai, kitna petrol me gaya pata nahi chalta. Breakdown dikhao",[2,3]]],
+ fuel:[["Petrol price badh gaya, fuel allowance dena chahiye",[2,3]],["Please give EV allowance or charging support",[3,4]],["Fuel cost is half my earning, add fuel support",[2,3]]],
+ insurance:[["Accident insurance claim process is very hard",[1,3]],["Need medical insurance for riders, safety at night is a problem",[2,4]],["Insurance kaise milega, koi info nahi app mein",[2,3]]],
+ praise:[["Good app, orders are coming fast in my area",[4,5]],["Badhiya app, timely payment this week. Thanks",[4,5]],["Easy to use, accha experience",[4,5]],["Support helped me quickly, nice",[4,5]],["Mast app for part time work",[5,5]],["Smooth app after recent update, happy",[4,5]]]
+};
+const APPS={
+ "RiderGo Partner":{payout:9,incentive:[4,4,4,4,4,6,9,11,12,13,14,14],lowpay:8,idblock:4,crash:[3,3,3,3,3,3,3,3,13,16,17,15],gps:5,wait:6,support:6,breakdown:[2,2,3,3,3,4,4,5,6,6,7,8],fuel:3,insurance:2,praise:9,ver:w=>w<4?"5.0":w<8?"5.1":"5.2"},
+ "DashKart Partner":{payout:2,incentive:6,lowpay:9,idblock:5,crash:4,gps:4,wait:6,support:8,breakdown:3,fuel:4,insurance:2,praise:10,ver:w=>w<6?"3.8":"3.9"},
+ "ZipRun Captain":{payout:7,incentive:7,lowpay:10,idblock:3,crash:5,gps:7,wait:2,support:5,breakdown:2,fuel:5,insurance:3,praise:7,ver:w=>w<5?"8.2":"8.3"}
+};
+const WEEK0=new Date(2026,6,13); // Mon 13 Jul 2026
+function buildSample(){
+  const r=rng(42),out=[];let id=0;
+  const keys=Object.keys(T);
+  Object.entries(APPS).forEach(([app,cfg])=>{
+    for(let w=0;w<12;w++){
+      keys.forEach(k=>{
+        const base=Array.isArray(cfg[k])?cfg[k][w]:cfg[k];
+        const n=poisson(base,r);
+        for(let j=0;j<n;j++){
+          const [txt,[lo,hi]]=T[k][Math.floor(r()*T[k].length)];
+          let text=txt,rating=lo+Math.floor(r()*(hi-lo+1));
+          if(k!=="praise"&&r()<.18){const k2=keys.filter(x=>x!==k&&x!=="praise")[Math.floor(r()*(keys.length-2))];text+=". "+T[k2][Math.floor(r()*T[k2].length)][0];rating=Math.max(1,rating-1)}
+          const day=Math.floor(r()*7);
+          out.push({id:id++,app,week:w,date:new Date(WEEK0.getTime()+(w*7+day)*864e5),rating,text,version:cfg.ver(w)});
+        }
+      });
+    }
+  });
+  return out;
+}
+
+/* ---------- state ---------- */
+let DATA={reviews:[],apps:[],weeks:12,source:"sim",weekStart:new Date(WEEK0),gapWeeks:[],byApp:{}};
+let REAL=null;
+let charts={};
+const ui={ds:"real",app:null,period:4,q:"",fr:"",fs:"",sort:"new",ftopics:new Set(),shown:40,ttopics:null,tmode:"abs",cband:"neg",wup:false,effort:store("rr_effort")||{},auIds:null};
+(function migrate(){const old=store("rr_roadmap");if(old&&old.length&&!store("rr_roadmap_sim")){store("rr_roadmap_sim",old)}})();
+let ROADMAP=[];
+const saveRM=()=>store("rr_roadmap_"+ui.ds,ROADMAP);
+const taxKey=()=>ui.ds==="sim"?"sim":ui.ds.startsWith("real")?"real":"import";
+function weekLabel(i,y){const d=new Date(DATA.weekStart.getTime()+i*7*864e5);return d.toLocaleDateString("en-IN",y?{day:"numeric",month:"short",year:"numeric"}:{day:"numeric",month:"short"})}
+const verMM=v=>{const m=String(v||"").match(/^(\d+)\.(\d+)/);return m?m[1]+"."+m[2]:""};
+const cmpVer=(a,b)=>{const A=a.split(".").map(Number),B=b.split(".").map(Number);return (A[0]-B[0])||(A[1]-B[1])};
+
+function tagAll(){
+  DATA.reviews.forEach(rv=>{
+    rv.topics=TAX.filter(tp=>tp.rx.test(rv.text)).map(tp=>tp.id);
+    if(rv.sent===undefined){rv.sent=sentiment(rv.text,rv.rating);rv.words=rv.text.trim().split(/\s+/).filter(Boolean).length}
+  });
+  DATA.byApp={};DATA.apps.forEach(a=>DATA.byApp[a]=[]);
+  DATA.reviews.forEach(r=>(DATA.byApp[r.app]||(DATA.byApp[r.app]=[])).push(r));
+}
+function loadTax(){const k=taxKey();try{TAX=parseTax(store("rr_tax_"+k)||DEFAULT_TAX[k])}catch(e){TAX=parseTax(DEFAULT_TAX[k])}}
+function loadSample(){DATA={reviews:buildSample(),apps:Object.keys(APPS),weeks:12,source:"sim",weekStart:new Date(WEEK0),gapWeeks:[],byApp:{}}}
+const REAL_FILES={real:"data/zomato_swiggy_2026.json",real23:"data/zomato_swiggy_2023.json"};
+const REALC={};
+async function fetchReal(ds){
+  if(REALC[ds])return REALC[ds];
+  const r=await fetch(REAL_FILES[ds]);
+  if(!r.ok)throw new Error("Could not load the real-review dataset, so the simulated dataset is shown.");
+  REALC[ds]=await r.json();return REALC[ds];
+}
+async function loadReal(ds){
+  const j=await fetchReal(ds);const start=new Date(j.meta.start+"T00:00:00");const M=j.meta;
+  const compact=M.format==="compact";
+  const reviews=j.rows.map((r,i)=>{
+    const date=compact?new Date(start.getTime()+r[1]*864e5+12*36e5):new Date(r[1]+"T12:00:00");
+    return {id:i,app:compact?M.apps[r[0]]:r[0],date,rating:r[2],text:r[3],version:verMM(compact?M.versions[r[4]]:r[4]),thumbs:r[5],week:Math.floor((date-start)/(7*864e5))};
+  }).filter(r=>r.week>=0&&r.week<M.weeks);
+  DATA={reviews,apps:["Swiggy","Zomato"],weeks:M.weeks,source:"real",weekStart:start,meta:M,gapWeeks:M.gap_weeks||[],byApp:{}};
+}
+async function switchDataset(ds){
+  ui.ds=ds;
+  if(ds==="real"||ds==="real23"){
+    $("#loadingMsg").textContent=ds==="real"?"Loading 228,274 real Play Store reviews from 2026…":"Loading 58,588 real Play Store reviews from 2023…";$("#loading").hidden=false;
+    try{await loadReal(ds)}catch(e){toast(e.message);ui.ds="sim";loadSample()}
+    $("#loading").hidden=true;
+  }else if(ds==="sim")loadSample();
+  $("#dsSel").value=ui.ds;
+  if(!DATA.apps.includes(ui.app))ui.app=DATA.apps[0];
+  ui.period=ui.ds==="sim"?4:12;
+  $("#periodSel").value=String(ui.period);
+  [...$("#periodSel").options].forEach(o=>o.disabled=+o.value>DATA.weeks);
+  loadTax();ROADMAP=store("rr_roadmap_"+ui.ds)||[];ui.ftopics.clear();ui.ttopics=null;ui.auIds=null;
+  tagAll();fillAppSel();renderAll();
+}
+const inWin=(rv,p=ui.period,offset=0)=>rv.week>=DATA.weeks-p-offset&&rv.week<DATA.weeks-offset;
+const appRows=a=>DATA.byApp[a]||[];
+const mine=()=>appRows(ui.app);
+const topicName=id=>(TAX.find(t=>t.id===id)||{name:id}).name;
+const upw=r=>1+Math.log2(1+(r.thumbs||0));
+
+/* ---------- metrics ---------- */
+function weekly(app,topicId){const a=Array(DATA.weeks).fill(0),tot=Array(DATA.weeks).fill(0);appRows(app).forEach(r=>{tot[r.week]++;if(!topicId||r.topics.includes(topicId))a[r.week]++});return {a,tot}}
+function spikes(app){
+  const nb=Math.max(DATA.weeks-4,2);
+  return TAX.map(tp=>{
+    const {a,tot}=weekly(app,tp.id);const sh=a.map((x,i)=>tot[i]?x/tot[i]:0);
+    const gw=new Set(DATA.gapWeeks||[]);const base=sh.slice(0,nb).filter((x,i)=>!gw.has(i)),recent=sh.slice(-2);
+    const m=mean(base),s=Math.max(sd(base),.01);
+    return {tp,base:m,recent:mean(recent),recentN:mean(a.slice(-2)),z:(mean(recent)-m)/s,ratio:mean(recent)/Math.max(m,.002)};
+  }).sort((x,y)=>y.z-x.z);
+}
+function topicStats(app,p=ui.period,band="all"){
+  let rs=appRows(app).filter(r=>inWin(r,p));if(band==="neg")rs=rs.filter(r=>r.rating<=2);
+  const N=rs.length,W=rs.reduce((s,r)=>s+upw(r),0)||1;
+  return TAX.map(tp=>{
+    const hit=rs.filter(r=>r.topics.includes(tp.id));
+    return {tp,n:hit.length,N,share:hit.length/(N||1),wshare:hit.reduce((s,r)=>s+upw(r),0)/W,sent:mean(hit.map(r=>r.sent)),rating:mean(hit.map(r=>r.rating)),hit};
+  });
+}
+function scoreTopics(){
+  const app=ui.app,W=Math.max(4,ui.period),half=Math.floor(W/2);
+  const w={R:+$("#wR").value,S:+$("#wS").value,M:+$("#wM").value,C:+$("#wC").value};
+  const sumW=(w.R+w.S+w.M+w.C)||1;
+  const mineS=topicStats(app,W);
+  // competitive gap is measured among 1-2 star reviews when there are enough of them: apps differ a lot in
+  // rating mix (Swiggy's sample is ~2x as one-star heavy as Zomato's), which inflates every raw complaint rate
+  const others=DATA.apps.filter(a=>a!==app);
+  const mineNeg=topicStats(app,W,"neg"),othNeg=others.map(a=>topicStats(a,W,"neg"));
+  const useNeg=mineNeg[0]&&mineNeg[0].N>=50&&othNeg.every(o=>o[0]&&o[0].N>=50);
+  const gapBase=useNeg?mineNeg:mineS,othBase=useNeg?othNeg:others.map(a=>topicStats(a,W));
+  ui.gapBand=useNeg?"neg":"all";
+  const reach=s=>ui.wup?s.wshare:s.share;
+  const maxShare=Math.max(...mineS.map(reach),.0001);
+  return mineS.map((s,i)=>{
+    const recentN=s.hit.filter(r=>r.week>=DATA.weeks-half).length,earlierN=s.n-recentN;
+    const mom=clamp((recentN-earlierN)/Math.max(earlierN,1),-1,3);
+    const k0=othBase.reduce((t,o)=>t+o[i].n,0),n0=othBase.reduce((t,o)=>t+o[i].N,0);
+    const compShare=n0?k0/n0:gapBase[i].share,myShare=gapBase[i].share;
+    const gap=myShare-compShare;
+    const sig={R:reach(s)/maxShare,S:s.n?(1-(s.sent+1)/2):0,M:(mom+1)/4,C:others.length?(clamp(gap/.12,-1,1)+1)/2:.5};
+    const impact=(w.R*sig.R+w.S*sig.S+w.M*sig.M+w.C*sig.C)/sumW;
+    const conf=s.n>=30?1:s.n>=12?.85:.6;
+    const eff=ui.effort[s.tp.name]||"M";
+    const ef={S:1,M:1.5,L:2.5}[eff];
+    return {...s,sig,mom,gap,myShare,compShare,conf,eff,score:100*impact*conf/ef};
+  }).filter(s=>s.n>0).sort((a,b)=>b.score-a.score);
+}
+function versionShifts(app){
+  const by={};
+  const gw=new Set(DATA.gapWeeks||[]);
+  appRows(app).forEach(r=>{if(!r.version||gw.has(r.week))return;const g=by[r.version]||(by[r.version]={v:r.version,rows:[],first:r.date});g.rows.push(r);if(r.date<g.first)g.first=r.date});
+  const vs=Object.values(by).filter(x=>x.rows.length>=40).sort((a,b)=>cmpVer(a.v,b.v));
+  return vs.map((x,i)=>{
+    const prev=vs.slice(Math.max(0,i-3),i),n=x.rows.length,pn=prev.reduce((s,p)=>s+p.rows.length,0);
+    const topics=TAX.map(tp=>{
+      const k=x.rows.filter(r=>r.topics.includes(tp.id)).length;
+      const pk=prev.reduce((s,p)=>s+p.rows.filter(r=>r.topics.includes(tp.id)).length,0);
+      const p1=k/n,p0=pn?pk/pn:null;let z=0;
+      if(pn){const pp=(k+pk)/(n+pn),se=Math.sqrt(pp*(1-pp)*(1/n+1/pn));z=se?(p1-p0)/se:0}
+      return {tp,k,p1,p0,z};
+    });
+    return {v:x.v,n,first:x.first,avg:mean(x.rows.map(r=>r.rating)),hasPrev:pn>0,topics,
+      jump:topics.filter(t=>t.z>=2&&t.k>=5).sort((a,b)=>b.z-a.z)[0]||null,
+      drop:topics.filter(t=>t.z<=-2).sort((a,b)=>a.z-b.z)[0]||null};
+  });
+}
+function wilson(k,n){if(!n)return [0,0];const z=1.96,p=k/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return [Math.max(0,c-h),Math.min(1,c+h)]}
+
+/* ---------- charts ---------- */
+const SER=()=>["--s1","--s2","--s3","--s4","--s5","--s6"].map(css);
+function chartDefaults(){Chart.defaults.color=css("--muted");Chart.defaults.borderColor=css("--line");Chart.defaults.font.family=css("--body").split(",")[0].replace(/"/g,"")+", system-ui";Chart.defaults.font.size=11.5;
+  Object.assign(Chart.defaults.plugins.tooltip,{backgroundColor:css("--ink"),titleColor:css("--bg"),bodyColor:css("--bg"),padding:10,cornerRadius:8,boxPadding:4,titleFont:{weight:"600"}});}
+/* shades weeks that fall inside a reported data gap, on any chart whose x axis is weeks */
+const gapPlugin={id:"gap",beforeDatasetsDraw(c){const g=c.options.plugins.gap;if(!g||!(DATA.gapWeeks||[]).length)return;const x=c.scales.x,a=c.chartArea,ctx=c.ctx;ctx.save();
+  const step=x.getPixelForValue(1)-x.getPixelForValue(0);const pat=document.createElement("canvas");pat.width=pat.height=6;const p=pat.getContext("2d");p.strokeStyle=css("--line-2");p.lineWidth=1.2;p.beginPath();p.moveTo(0,6);p.lineTo(6,0);p.stroke();
+  ctx.fillStyle=ctx.createPattern(pat,"repeat");const w=DATA.gapWeeks;const x0=x.getPixelForValue(Math.min(...w))-step/2,x1=x.getPixelForValue(Math.max(...w))+step/2;ctx.fillRect(Math.max(x0,a.left),a.top,Math.min(x1,a.right)-Math.max(x0,a.left),a.bottom-a.top);ctx.restore()}};
+function mk(id,cfg){if(typeof Chart==="undefined")return;if(charts[id])charts[id].destroy();chartDefaults();if(id==="cRating"||id==="cTrend"){cfg.plugins=[gapPlugin];cfg.options.plugins.gap=true}charts[id]=new Chart(document.getElementById(id),cfg)}
+const baseOpts=(extra={})=>{const o={responsive:true,maintainAspectRatio:false,animation:false,...extra};o.plugins={legend:{labels:{boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:"rectRounded",padding:14,color:css("--ink-2")}},...(extra.plugins||{})};if(o.plugins.legend&&!o.plugins.legend.labels)o.plugins.legend.labels={boxWidth:8,boxHeight:8,usePointStyle:true,pointStyle:"rectRounded",padding:14,color:css("--ink-2")};return o};
+
+/* ---------- renderers ---------- */
+function renderAll(){
+  const src=DATA.source,M=DATA.meta||{};
+  $("#srcBadge").textContent=src==="sim"?"Simulated":src==="real"?"Real reviews":"Your data";
+  $("#srcBadge").classList.toggle("real",src!=="sim");
+  $("#ovTitle").textContent=src==="sim"?"What riders are telling you":"What customers are telling you";
+  $("#srcNote").innerHTML=src==="real"
+    ?(ui.ds==="real"
+      ?`<span class="tag v">Real data</span><span><b>${fmt(DATA.reviews.length)} public Google Play reviews</b> of Swiggy and Zomato written between ${weekLabel(0,1)} and ${new Date(DATA.weekStart.getTime()+(DATA.weeks*7-1)*864e5).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}. Collected by a public GitHub project with google-play-scraper (English reviews from India, newest first). Reviews are self-selected. Two thirds are three words or fewer, and the shaded weeks are a feed gap the collectors reported, when positive reviews went missing.</span>`
+      :`<span class="tag v">Real data</span><span><b>${fmt(DATA.reviews.length)} public Google Play reviews</b> of Swiggy and Zomato, weeks of ${weekLabel(0,1)} to ${weekLabel(DATA.weeks-1,1)}. Source is a public GitHub copy of a Kaggle scrape whose method is undocumented. Swiggy's file is far more one-star heavy than Zomato's, so use the 1 to 2 star comparison in Competitors.</span>`)
+    :src==="sim"?`<span class="tag s">Simulated</span><span><b>Simulated data.</b> Three fictional delivery-partner apps generated from hand-written English and Hinglish templates with a seeded random generator. It shows the rider-side scenario behind Kamai. No real users or reviews.</span>`
+    :`<span class="tag r">Your data</span><span><b>Your imported reviews.</b> Processed in this browser only.</span>`;
+  const pa=$("#periodAll");pa.value=String(DATA.weeks);pa.textContent=`All ${DATA.weeks} weeks`;pa.disabled=false;
+  $("#periodSel").value=String(ui.period);
+  renderOverview();renderFeedback();renderTrends();renderCompetitors();renderPrioritize();renderRoadmap();renderAudit();
+  renderAnswers();
+}
+function renderAnswers(){
+  const sc=scoreTopics(),top=sc[0];
+  $("#ovAnswer").innerHTML=top?`<span class="k">Answer first</span><span><b>${esc(top.tp.name)}</b> is ${esc(ui.app)}'s top priority in this window. It appears in ${pct(top.share,1)} of reviews with average sentiment ${fmt(top.sent,2)}. ${top.conf<1?"Confidence is limited because there are few mentions.":"Open Prioritize to see the evidence."}</span>`:"";
+  const sp=spikes(ui.app).filter(s=>s.z>2&&s.recentN>=4)[0];
+  $("#trAnswer").innerHTML=sp?`<span class="k">Rising now</span><span><b>${esc(sp.tp.name)}</b> is at ${pct(sp.recent,1)} of reviews over the last two weeks, ${fmt(sp.ratio,1)}× its baseline.</span>`:`<span class="k">Steady</span><span>No topic for ${esc(ui.app)} is above its normal range in the last two weeks. The complaints below are long-running rather than new.</span>`;
+  if(DATA.apps.length>1){
+    const st=Object.fromEntries(DATA.apps.map(a=>[a,topicStats(a,ui.period,ui.cband)])),oth=DATA.apps.filter(a=>a!==ui.app);
+    const g=TAX.map((tp,i)=>{const y=st[ui.app][i],k0=oth.reduce((s,a)=>s+st[a][i].n,0),n0=oth.reduce((s,a)=>s+st[a][i].N,0),o=n0?k0/n0:0,se=Math.sqrt(y.share*(1-y.share)/(y.N||1)+o*(1-o)/(n0||1));return {tp,gap:y.share-o,sig:Math.abs(y.share-o)>1.96*se,you:y.share,o}}).filter(x=>x.sig).sort((a,b)=>b.gap-a.gap);
+    const w=g[0],bst=g[g.length-1];
+    $("#cpAnswer").innerHTML=w&&w.gap>0?`<span class="k">Biggest gap</span><span>${esc(ui.app)} gets more <b>${esc(w.tp.name)}</b> mentions than ${esc(oth.join(", "))}, ${fmt(w.you*100,1)} vs ${fmt(w.o*100,1)} per 100 ${ui.cband==="neg"?"unhappy ":""}reviews.${bst&&bst.gap<0?` It does better on <b>${esc(bst.tp.name)}</b> (${fmt(bst.you*100,1)} vs ${fmt(bst.o*100,1)}).`:""}</span>`:`<span class="k">No clear gap</span><span>No topic differs from competitors by more than its confidence interval in this window.</span>`;
+  }else $("#cpAnswer").innerHTML="";
+  $("#prAnswer").innerHTML=top?`<span class="k">Top three</span><span>${sc.slice(0,3).map((s,i)=>`<b>${i+1}. ${esc(s.tp.name)}</b> <span class="num muted">${fmt(s.score,1)}</span>`).join(" &nbsp;·&nbsp; ")}</span>`:"";
+}
+function deltaHTML(cur,prev,higherIsBad,isPct){
+  if(prev===null||!isFinite(prev))return '<span class="delta muted">no earlier window</span>';
+  const d=cur-prev;const cls=d>0?(higherIsBad?"up-bad":"up-good"):d<0?(higherIsBad?"down-good":"down-bad"):"muted";
+  const val=isPct?fmt(Math.abs(d)*100,1)+" pts":fmt(Math.abs(d),2);
+  return `<span class="delta ${cls}">${d>0?"▲":d<0?"▼":"■"} ${val} vs previous</span>`;
+}
+function renderOverview(){
+  const P=ui.period,rs=mine(),cur=rs.filter(r=>inWin(r)),prevOk=DATA.weeks>=2*P,prev=prevOk?rs.filter(r=>inWin(r,P,P)):[];
+  $("#ovSub").textContent=`${ui.app} · weeks of ${weekLabel(DATA.weeks-P)} – ${weekLabel(DATA.weeks-1,1)} · ${fmt(cur.length)} reviews in window`;
+  const avg=mean(cur.map(r=>r.rating)),pavg=prev.length?mean(prev.map(r=>r.rating)):null;
+  const neg=cur.filter(r=>r.sent<-.2).length/(cur.length||1),pneg=prev.length?prev.filter(r=>r.sent<-.2).length/prev.length:null;
+  const cov=cur.filter(r=>r.topics.length).length/(cur.length||1);
+  const short=cur.filter(r=>r.words<=5).length/(cur.length||1);
+  const volD=prev.length?`<span class="delta muted">${cur.length>=prev.length?"▲":"▼"} ${fmt(Math.abs(cur.length-prev.length))} vs previous</span>`:deltaHTML(0,null);
+  $("#kpis").innerHTML=[
+    ["Reviews",fmt(cur.length),volD],
+    ["Average rating",fmt(avg,2)+"★",deltaHTML(avg,pavg,false,false)],
+    ["Negative share",pct(neg),deltaHTML(neg,pneg,true,true)],
+    ["Taxonomy coverage",pct(cov),`<span class="delta muted">${pct(short)} are ≤5 words (e.g. "nice app")</span>`]
+  ].map(([l,v,d])=>`<div class="panel kpi"><span class="label">${l}</span><span class="value num">${v}</span>${d}</div>`).join("");
+  const sp=spikes(ui.app).filter(s=>s.z>2&&s.recentN>=4);
+  $("#alerts").innerHTML=sp.length?sp.map(s=>`<div class="alert ${s.z>4?"crit":""}"><span class="stripe"></span><div><b>${esc(s.tp.name)}</b><span class="muted" style="font-size:.88rem">${pct(s.recent,1)} of reviews vs ${pct(s.base,1)} baseline · ${fmt(s.ratio,1)}× · z = ${fmt(s.z,1)}</span></div><span class="pill ${s.z>4?"bad":"warn"}">${s.z>4?"Critical":"Rising"}</span></div>`).join(""):'<p class="empty">No topic is spiking right now.</p>';
+  $("#insights").innerHTML=makeInsights().map(t=>`<li>${t}</li>`).join("");
+  const ts=topicStats(ui.app).filter(s=>s.n).sort((a,b)=>b.n-a.n).slice(0,8);
+  const bad=css("--bad"),warn=css("--warn"),good=css("--good");
+  mk("cTopics",{type:"bar",data:{labels:ts.map(s=>s.tp.name),datasets:[{label:"Mentions",data:ts.map(s=>s.n),backgroundColor:ts.map(s=>s.sent<-.45?bad:s.sent<-.1?warn:good),borderRadius:3,barThickness:"flex",maxBarThickness:18}]},options:baseOpts({indexAxis:"y",plugins:{legend:{display:false},tooltip:{callbacks:{afterLabel:c=>`${pct(ts[c.dataIndex].share,1)} of reviews · avg sentiment ${fmt(ts[c.dataIndex].sent,2)} (red < −0.45, amber < −0.1)`}}},scales:{x:{grid:{color:css("--line")},border:{display:false}},y:{grid:{display:false},border:{display:false},ticks:{color:css("--ink-2")}}}})});
+  const byW=Array.from({length:DATA.weeks},(_,w)=>{const x=rs.filter(r=>r.week===w);return x.length?+mean(x.map(r=>r.rating)).toFixed(2):null});
+  const others=DATA.apps.filter(a=>a!==ui.app).slice(0,1);
+  const oW=others.map(a=>Array.from({length:DATA.weeks},(_,w)=>{const x=appRows(a).filter(r=>r.week===w);return x.length?+mean(x.map(r=>r.rating)).toFixed(2):null}));
+  const lo=Math.max(1,Math.floor(Math.min(...byW.filter(x=>x!==null),...oW.flat().filter(x=>x!==null))-.3)),hi=Math.min(5,Math.ceil(Math.max(...byW.filter(x=>x!==null),...oW.flat().filter(x=>x!==null))+.3));
+  mk("cRating",{type:"line",data:{labels:Array.from({length:DATA.weeks},(_,i)=>weekLabel(i)),datasets:[{label:ui.app,data:byW,borderColor:css("--accent"),backgroundColor:css("--accent"),borderWidth:2.2,tension:.3,pointRadius:ctx=>ctx.dataIndex===DATA.weeks-1?4:0,pointHoverRadius:4},...others.map((a,i)=>({label:a,data:oW[i],borderColor:css("--comp"),backgroundColor:css("--comp"),borderWidth:1.6,borderDash:[4,3],tension:.3,pointRadius:0,pointHoverRadius:3}))]},options:baseOpts({interaction:{mode:"index",intersect:false},plugins:{legend:{display:others.length>0,position:"top",align:"end"}},scales:{y:{min:lo,max:hi,ticks:{stepSize:.5}},x:{grid:{display:false},ticks:{maxRotation:0,autoSkipPadding:14}}}})});
+  $("#ratingNote").innerHTML=DATA.gapWeeks&&DATA.gapWeeks.length?'<span class="gapkey"><i></i>Feed gap reported upstream. Positive reviews went missing, so ratings dip artificially.</span>':"";
+}
+function makeInsights(){
+  const out=[],sp=spikes(ui.app)[0];
+  if(sp&&sp.z>2&&sp.recentN>=4)out.push(`<b>${esc(sp.tp.name)}</b> is running at ${pct(sp.recent,1)} of reviews over the last two weeks, ${fmt(sp.ratio,1)}× its baseline of ${pct(sp.base,1)}.`);
+  const vs=versionShifts(ui.app).filter(v=>v.hasPrev).slice(-3).filter(v=>v.jump).sort((a,b)=>b.jump.z-a.jump.z)[0];
+  const recentV=versionShifts(ui.app).filter(v=>v.hasPrev).slice(-3);
+  if(!vs&&recentV.length)out.push(`Release check: none of the last ${recentV.length} versions (v${recentV.map(v=>esc(v.v)).join(", v")}) raised any topic's share significantly against the versions before it. Complaints here are chronic, not release regressions.`);
+  if(vs)out.push(`Release check: in <b>v${esc(vs.v)}</b> (first seen ${vs.first.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}), <b>${esc(vs.jump.tp.name)}</b> rose to ${pct(vs.jump.p1,1)} of reviews from ${pct(vs.jump.p0,1)} across the three previous versions (z = ${fmt(vs.jump.z,1)}). Check what that release changed.`);
+  const sc=scoreTopics();
+  const behind=sc.filter(s=>s.gap>.01).sort((a,b)=>b.gap-a.gap)[0];
+  if(behind&&DATA.apps.length>1)out.push(ui.gapBand==="neg"?`Among unhappy (1–2★) reviewers, you trail competitors most on <b>${esc(behind.tp.name)}</b>: ${fmt(behind.myShare*100,1)} mentions per 100 vs ${fmt(behind.compShare*100,1)}. Raw rates exaggerate gaps when rating mixes differ, so ReviewRadar compares like with like.`:`You trail competitors most on <b>${esc(behind.tp.name)}</b>: ${fmt(behind.myShare*100,1)} mentions per 100 reviews vs ${fmt(behind.compShare*100,1)} for the others.`);
+  const reqs=sc.filter(s=>s.tp.kind==="request"&&s.mom>.3).sort((a,b)=>b.mom-a.mom)[0];
+  if(reqs)out.push(`Requests for <b>${esc(reqs.tp.name)}</b> grew ${pct(reqs.mom)} within the window. Consider a discovery sprint before it turns into a complaint.`);
+  const unt=mine().filter(r=>inWin(r)&&!r.topics.length);
+  if(unt.length){const longU=unt.filter(r=>r.words>5).length;out.push(`${fmt(unt.length)} reviews match no topic, but only ${fmt(longU)} of them are longer than five words. Read those in Feedback with the Untagged filter and extend the taxonomy.`)}
+  return out.length?out:["Not enough data in this window for insights."];
+}
+function hl(text,terms){let s=esc(text);terms.filter(Boolean).sort((a,b)=>b.length-a.length).forEach(t=>{const re=new RegExp("("+esc(t).replace(/[.*+?^${}()|[\]\\]/g,"\\$&")+")","gi");s=s.replace(re,"<mark>$1</mark>")});return s}
+function renderFeedbackChips(){
+  $("#fTopics").innerHTML=[...TAX.map(t=>`<button class="chip" data-t="${t.id}" aria-pressed="${ui.ftopics.has(t.id)}">${esc(t.name)}</button>`),`<button class="chip" data-t="__none" aria-pressed="${ui.ftopics.has("__none")}">Untagged</button>`].join("");
+}
+function reviewMeta(r){return `<span class="stars" aria-label="${r.rating} stars">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</span><span>${r.date.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}</span>${r.version?`<span class="num">v${esc(r.version)}</span>`:""}${r.thumbs?`<span class="num" title="Other users marked this review helpful">▲ ${fmt(r.thumbs)} upvotes</span>`:""}`}
+function renderFeedback(){
+  renderFeedbackChips();
+  const q=ui.q.trim().toLowerCase();
+  let rs=mine().filter(r=>inWin(r));
+  if(q)rs=rs.filter(r=>r.text.toLowerCase().includes(q));
+  if(ui.fr){const [a,b]=ui.fr.split("-").map(Number);rs=rs.filter(r=>r.rating>=a&&r.rating<=(b||a))}
+  if(ui.fs)rs=rs.filter(r=>ui.fs==="neg"?r.sent<-.2:ui.fs==="pos"?r.sent>.2:r.sent>=-.2&&r.sent<=.2);
+  if(ui.ftopics.size)rs=rs.filter(r=>[...ui.ftopics].some(t=>t==="__none"?!r.topics.length:r.topics.includes(t)));
+  const sorts={new:(a,b)=>b.date-a.date,neg:(a,b)=>a.sent-b.sent,pos:(a,b)=>b.sent-a.sent,up:(a,b)=>(b.thumbs||0)-(a.thumbs||0)};
+  rs.sort(sorts[ui.sort]||sorts.new);
+  $("#fCount").textContent=`${fmt(rs.length)} reviews match`;
+  const terms=[q,...[...ui.ftopics].flatMap(id=>(TAX.find(t=>t.id===id)||{kws:[]}).kws)];
+  $("#fList").innerHTML=rs.slice(0,ui.shown).map(r=>`<div class="review"><div class="meta">${reviewMeta(r)}<span class="pill ${r.sent<-.2?"bad":r.sent>.2?"good":""}">sentiment ${fmt(r.sent,2)}</span></div><div>${hl(r.text,terms)}</div><div class="chips">${r.topics.map(id=>`<span class="pill acc">${esc(topicName(id))}</span>`).join("")||'<span class="pill">Untagged</span>'}</div></div>`).join("")||'<p class="empty">No reviews match these filters. Clear a filter or widen the window.</p>';
+  $("#fMore").hidden=rs.length<=ui.shown;
+}
+function renderTrends(){
+  if(!ui.ttopics)ui.ttopics=new Set(spikes(ui.app).slice(0,4).map(s=>s.tp.id));
+  $("#tTopics").innerHTML=TAX.map(t=>`<button class="chip" data-t="${t.id}" aria-pressed="${ui.ttopics.has(t.id)}">${esc(t.name)}</button>`).join("");
+  const col=SER(),labels=Array.from({length:DATA.weeks},(_,i)=>weekLabel(i));
+  const ds=[...ui.ttopics].map((id,i)=>{const {a,tot}=weekly(ui.app,id);return {label:topicName(id),data:ui.tmode==="abs"?a:a.map((x,j)=>tot[j]?+(x/tot[j]*100).toFixed(1):0),borderColor:col[i%6],backgroundColor:col[i%6],borderWidth:2,tension:.3,pointRadius:0,pointHoverRadius:4}});
+  mk("cTrend",{type:"line",data:{labels,datasets:ds},options:baseOpts({interaction:{mode:"index",intersect:false},plugins:{legend:{position:"top",align:"start"}},scales:{y:{beginAtZero:true,border:{display:false},title:{display:true,text:ui.tmode==="abs"?"Mentions per week":"% of the week's reviews"}},x:{grid:{display:false},ticks:{maxRotation:0,autoSkipPadding:14}}}})});
+  $("#gapKey").hidden=!(DATA.gapWeeks||[]).length;
+  const {tot}=weekly(ui.app);
+  $("#relNote").textContent=`Weekly reviews for ${ui.app} range from ${fmt(Math.min(...tot))} to ${fmt(Math.max(...tot))}. When volume moves this much, read the share view.`;
+  $("#spikeTbl").innerHTML=`<thead><tr><th>Topic</th><th class="n">Baseline share</th><th class="n">Last 2 wks</th><th class="n">Mentions/wk</th><th class="n">z</th><th>Status</th></tr></thead><tbody>${spikes(ui.app).map(s=>`<tr><td>${esc(s.tp.name)}</td><td class="n">${pct(s.base,1)}</td><td class="n">${pct(s.recent,1)}</td><td class="n">${fmt(s.recentN,0)}</td><td class="n">${fmt(s.z,1)}</td><td>${s.z>4&&s.recentN>=4?'<span class="pill bad">Critical</span>':s.z>2&&s.recentN>=4?'<span class="pill warn">Rising</span>':'<span class="pill">Stable</span>'}</td></tr>`).join("")}</tbody>`;
+  const vs=versionShifts(ui.app).slice(-8).reverse();
+  const cell=t=>t?`<b>${esc(t.tp.name)}</b><br><span class="num muted">${pct(t.p0,1)} → ${pct(t.p1,1)} · z ${fmt(t.z,1)}</span>`:'<span class="muted">none</span>';
+  $("#verTbl").innerHTML=vs.length?`<thead><tr><th>Version</th><th>First seen</th><th class="n">Reviews</th><th class="n">Avg ★</th><th>Biggest rise</th><th>Biggest fall</th></tr></thead><tbody>${vs.map(v=>`<tr><td class="num">v${esc(v.v)}</td><td>${v.first.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"})}</td><td class="n">${fmt(v.n)}</td><td class="n">${fmt(v.avg,2)}</td><td>${v.hasPrev?cell(v.jump):'<span class="muted">first version in data</span>'}</td><td>${v.hasPrev?cell(v.drop):""}</td></tr>`).join("")}</tbody>`:'<tbody><tr><td class="muted">Version data not available for this app.</td></tr></tbody>';
+}
+function renderCompetitors(){
+  const apps=DATA.apps;
+  $("#cbAll").setAttribute("aria-pressed",ui.cband==="all");$("#cbNeg").setAttribute("aria-pressed",ui.cband==="neg");
+  if(apps.length<2){$("#compKpis").innerHTML='<div class="panel"><p class="empty">Import at least two apps to compare.</p></div>';$("#compTbl").innerHTML="";if(charts.cComp){charts.cComp.destroy();delete charts.cComp}return}
+  const stats=Object.fromEntries(apps.map(a=>[a,topicStats(a,ui.period,ui.cband)]));
+  $("#compKpis").innerHTML=apps.slice(0,4).map(a=>{const rs=appRows(a).filter(r=>inWin(r));return `<div class="panel kpi"><span class="label">${esc(a)}${a===ui.app?" (you)":""}</span><span class="value num">${fmt(mean(rs.map(r=>r.rating)),2)}★</span><span class="delta muted">${fmt(rs.length)} reviews · ${pct(rs.filter(r=>r.rating===1).length/(rs.length||1))} one-star</span></div>`}).join("");
+  const col=SER(),order=[ui.app,...apps.filter(a=>a!==ui.app)];
+  mk("cComp",{type:"bar",data:{labels:TAX.map(t=>t.name),datasets:order.map((a,i)=>({label:a,data:stats[a].map(s=>+(s.share*100).toFixed(1)),backgroundColor:i===0?css("--accent"):css("--comp"),borderRadius:3,maxBarThickness:22}))},options:baseOpts({layout:{padding:{left:36}},interaction:{mode:"index",intersect:false},plugins:{legend:{position:"top",align:"end"}},scales:{y:{beginAtZero:true,border:{display:false},title:{display:true,text:ui.cband==="neg"?"Mentions per 100 one- and two-star reviews":"Mentions per 100 reviews"}},x:{grid:{display:false},ticks:{maxRotation:50,minRotation:30}}}})});
+  const others=apps.filter(a=>a!==ui.app);
+  const rows=TAX.map((tp,i)=>{
+    const y=stats[ui.app][i],k0=others.reduce((s,a)=>s+stats[a][i].n,0),n0=others.reduce((s,a)=>s+stats[a][i].N,0);
+    const you=y.share,oth=n0?k0/n0:0,gap=you-oth,se=Math.sqrt(you*(1-you)/(y.N||1)+oth*(1-oth)/(n0||1)),ci=1.96*se;
+    const best=others.reduce((b,a)=>stats[a][i].share<stats[b][i].share?a:b,others[0]);
+    return {tp,you,oth,gap,ci,sig:Math.abs(gap)>ci,best,bestS:stats[best][i].share};
+  }).sort((a,b)=>b.gap-a.gap);
+  $("#compTbl").innerHTML=`<thead><tr><th>Topic</th><th class="n">You /100</th><th class="n">Others /100</th><th class="n">Gap ± 95% CI</th><th>Best in class</th><th>Read</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.tp.name)}</td><td class="n">${fmt(r.you*100,1)}</td><td class="n">${fmt(r.oth*100,1)}</td><td class="n" style="color:${r.sig&&r.gap>0?"var(--bad)":r.sig&&r.gap<0?"var(--good)":"inherit"}">${r.gap>0?"+":""}${fmt(r.gap*100,1)} <span class="muted">±${fmt(r.ci*100,1)}</span></td><td>${esc(r.best)} <span class="muted num">${fmt(r.bestS*100,1)}</span></td><td>${r.sig?(r.gap>0?'<span class="pill bad">Behind</span>':'<span class="pill good">Ahead</span>'):'<span class="pill">No clear gap</span>'}</td></tr>`).join("")}</tbody>`;
+}
+const METRIC={
+ "Payout delays":"Payout-related tickets per 1,000 active partners","Incentive rules":"Incentive disputes per week and partner D30 retention","Low pay per order":"Net earnings per online hour (survey + payout data)","ID blocks":"Wrongful-block appeals overturned and time to resolution","App crashes & login":"Crash-free sessions % and login success rate","GPS & distance":"Distance-dispute tickets per 1,000 orders","Restaurant wait time":"Median wait at pickup and orders lost to waiting","Support quality":"First-response time and ticket CSAT","Earnings breakdown":"Weekly users of earnings screen and 'how is pay calculated' tickets","Fuel allowance":"Partner churn citing cost and net earnings per hour","Insurance & safety":"Claims filed vs approved and awareness of cover",
+ "Late delivery":"Orders delivered after promised time per 1,000 orders","Cancellations & refunds":"Refund turnaround time and repeat contacts about refunds","Customer support":"First-response time and repeat-contact rate within 7 days","Missing or wrong items":"Missing or wrong item reports per 1,000 orders","Food quality & hygiene":"Quality complaints per 1,000 orders","Fees & pricing":"Checkout drop-off after fees are shown and fee complaints share","Membership (Gold / One)":"Member renewal rate and broken member promises per 1,000 member orders","Offers & coupons":"Coupon failure rate at checkout","Payments":"Payment success rate and debited-but-no-order cases","App bugs & login":"Crash-free sessions % and login success rate","Delivery partner conduct":"Conduct complaints per 1,000 orders","Address & location":"Location-mismatch calls per 1,000 orders","Restaurant availability":"Orders cancelled because the outlet was closed","Notifications & rating prompts":"Notification opt-out rate and rating-prompt dismissals","Feature requests":"Validate in discovery before setting a metric","Cash on delivery":"COD availability at checkout and conversion for COD users",
+ "Crashes & bugs":"Crash-free sessions %","Login & OTP":"Login success rate","Performance":"P90 screen load time","Ads & notifications":"Notification opt-out rate","Account blocked":"Appeals resolved within 48 h","Usability":"Task success in usability tests"};
+function renderPrioritize(){
+  ["R","S","M","C"].forEach(k=>$("#w"+k+"v").textContent=$("#w"+k).value);
+  $("#wUp").checked=ui.wup;
+  const sc=scoreTopics(),max=Math.max(...sc.map(s=>s.score),1);
+  $("#prioTbl").innerHTML=`<thead><tr><th>#</th><th>Opportunity</th><th>Signals: reach · severity · momentum · gap</th><th class="n">Mentions</th><th>Effort</th><th class="n">Priority</th><th></th></tr></thead><tbody>${sc.map((s,i)=>{const inRm=ROADMAP.some(x=>x.name===s.tp.name);const ev=[...s.hit].sort((a,b)=>(ui.wup?(b.thumbs||0)-(a.thumbs||0):0)||a.sent-b.sent).filter((r,j,arr)=>arr.findIndex(x=>x.text===r.text)===j).slice(0,3);return `<tr><td class="rank">${String(i+1).padStart(2,"0")}</td><td style="min-width:180px"><b>${esc(s.tp.name)}</b>${s.tp.kind==="request"||s.conf<1?`<div class="chips" style="margin-top:4px">${s.tp.kind==="request"?'<span class="pill acc">Request</span>':""}${s.conf<1?`<span class="pill ${s.conf>.8?"warn":"bad"}">${s.conf>.8?"Medium":"Low"} confidence</span>`:""}</div>`:""}</td><td style="min-width:170px"><div class="stack" title="reach ${fmt(s.sig.R,2)} · severity ${fmt(s.sig.S,2)} · momentum ${fmt(s.sig.M,2)} · gap ${fmt(s.sig.C,2)}"><i style="width:${s.sig.R*25}%;background:var(--s1)"></i><i style="width:${s.sig.S*25}%;background:var(--s2)"></i><i style="width:${s.sig.M*25}%;background:var(--s3)"></i><i style="width:${s.sig.C*25}%;background:var(--s4)"></i></div><span class="muted num" style="font-size:.78rem">${fmt(s.sig.R,2)} · ${fmt(s.sig.S,2)} · ${fmt(s.sig.M,2)} · ${fmt(s.sig.C,2)}</span></td><td class="n">${fmt(s.n)}<br><span class="muted">${pct(s.share,1)}</span></td><td><select data-eff="${esc(s.tp.name)}" aria-label="Effort for ${esc(s.tp.name)}">${["S","M","L"].map(e=>`<option ${e===s.eff?"selected":""}>${e}</option>`).join("")}</select></td><td class="n score-cell"><b>${fmt(s.score,1)}</b><div class="bar" style="margin-top:6px"><i style="width:${s.score/max*100}%"></i></div></td><td style="min-width:150px"><details><summary class="ev-sum">Read evidence</summary><div class="evidence">${ev.map(r=>`<q>${esc(r.text)}</q><span class="muted" style="font-size:.8rem">${r.rating}★ · ${r.date.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}${r.thumbs?` · ▲ ${fmt(r.thumbs)}`:""}</span>`).join("")}</div></details><div style="margin-top:8px">${inRm?'<span class="pill good">On roadmap</span>':`<select class="addsel" data-add="${esc(s.tp.name)}" aria-label="Add ${esc(s.tp.name)} to roadmap"><option value="">Add to roadmap</option>${["Now","Next","Later"].map(c=>`<option value="${c}">${c}</option>`).join("")}</select>`}</div></td></tr>`}).join("")}</tbody>`;
+  $("#prioTbl").dataset.scores=JSON.stringify(sc.map(s=>({name:s.tp.name,score:s.score,n:s.n,share:s.share,kind:s.tp.kind,ev:[...s.hit].sort((a,b)=>a.sent-b.sent)[0]?.text||""})));
+}
+function renderRoadmap(){
+  $("#rmCount").textContent=ROADMAP.length;
+  $("#board").innerHTML=["Now","Next","Later"].map(c=>{const items=ROADMAP.filter(x=>x.col===c);return `<div class="col"><h3><span><span class="dot"></span>${c}</span><span class="num">${items.length}</span></h3>${items.map(x=>`<div class="card"><b>${esc(x.name)}</b><div class="row"><span class="pill acc">priority ${fmt(x.score,1)}</span><span class="pill">${fmt(x.n)} mentions · ${pct(x.share,1)}</span><span class="pill">${esc(x.app)}</span></div><span style="font-size:.88rem"><span class="muted">Move metric:</span> ${esc(METRIC[x.name]||"Define the success metric before building")}</span>${x.ev?`<q class="muted" style="font-size:.85rem">${esc(x.ev)}</q>`:""}<div class="row">${["Now","Next","Later"].filter(k=>k!==c).map(k=>`<button class="btn small" data-move="${esc(x.name)}" data-col="${k}">Move to ${k}</button>`).join("")}<button class="btn small" data-del="${esc(x.name)}">Remove</button></div></div>`).join("")||'<p class="empty">Add items from Prioritize.</p>'}</div>`}).join("");
+}
+
+/* ---------- tag audit ---------- */
+const auKey=()=>"rr_audit_"+ui.ds;
+const rKey=r=>r.app+":"+r.id;
+function drawAudit(){
+  const pool=mine().filter(r=>inWin(r)&&r.topics.length);
+  const r=rng((Date.now()%1e9)|0),pick=[];const used=new Set();
+  while(pick.length<Math.min(25,pool.length)){const i=Math.floor(r()*pool.length);if(!used.has(i)){used.add(i);pick.push(rKey(pool[i]))}}
+  ui.auIds=pick;
+}
+function renderAudit(){
+  if(!ui.auIds)drawAudit();
+  const J=store(auKey())||{};
+  const byKey=new Map(DATA.reviews.map(r=>[rKey(r),r]));
+  const items=ui.auIds.map(k=>byKey.get(k)).filter(Boolean);
+  $("#auNote").textContent=`25 random tagged reviews from ${ui.app}, last ${ui.period} weeks. Mark each tag ✓ if the review really is about that topic.`;
+  $("#auList").innerHTML=items.map(r=>`<div class="audit-item"><div class="review" style="border:0;padding:0"><div class="meta">${reviewMeta(r)}</div><div>${hl(r.text,r.topics.flatMap(id=>(TAX.find(t=>t.id===id)||{kws:[]}).kws))}</div></div><div class="chips">${r.topics.map(id=>{const n=topicName(id),k=rKey(r)+"|"+n,v=J[k];return `<span class="judge">${esc(n)}<button class="ok" data-j="${esc(k)}" data-v="1" aria-pressed="${v===1}" aria-label="${esc(n)} correct">✓</button><button class="no" data-j="${esc(k)}" data-v="0" aria-pressed="${v===0}" aria-label="${esc(n)} wrong">✗</button></span>`}).join("")}</div></div>`).join("")||'<p class="empty">No tagged reviews in this window.</p>';
+  const per={};
+  Object.entries(J).forEach(([k,v])=>{const i=k.lastIndexOf("|"),rk=k.slice(0,i),n=k.slice(i+1),rv=byKey.get(rk);if(!rv||!TAX.some(t=>t.name===n&&rv.topics.includes(t.id)))return;(per[n]||(per[n]={k:0,n:0})).n++;if(v===1)per[n].k++});
+  const tot=Object.values(per).reduce((a,b)=>({k:a.k+b.k,n:a.n+b.n}),{k:0,n:0});
+  const [lo,hi]=wilson(tot.k,tot.n);
+  const rowsP=Object.entries(per).map(([n,x])=>({n,...x,p:x.k/x.n,ci:wilson(x.k,x.n)})).sort((a,b)=>a.p-b.p);
+  const worst=rowsP.filter(x=>x.n>=5)[0];
+  $("#auKpis").innerHTML=[["Tags judged",fmt(tot.n),`<span class="delta muted">across ${Object.keys(per).length} topics</span>`],["Overall precision",tot.n>=10?pct(tot.k/tot.n):"–",`<span class="delta muted">${tot.n>=10?`95% CI ${pct(lo)} to ${pct(hi)}`:tot.n?`shown after 10 judgments (${tot.n} so far)`:"judge some tags to start"}</span>`],["Topics with 10+ judgments",fmt(rowsP.filter(x=>x.n>=10).length),`<span class="delta muted">of ${TAX.length} topics</span>`],["Weakest topic",worst?esc(worst.n):"–",`<span class="delta muted">${worst?`${pct(worst.p)} precise on ${worst.n} tags`:"needs 5+ judgments"}</span>`]].map(([l,v,d])=>`<div class="panel kpi"><span class="label">${l}</span><span class="value num" style="font-size:${String(v).length>10?"1.1rem":"2rem"}">${v}</span>${d}</div>`).join("");
+  $("#auTbl").innerHTML=rowsP.length?`<thead><tr><th>Topic</th><th class="n">Judged</th><th class="n">Correct</th><th class="n">Precision</th><th class="n">95% CI</th><th>Read</th></tr></thead><tbody>${rowsP.map(x=>`<tr><td>${esc(x.n)}</td><td class="n">${x.n}</td><td class="n">${x.k}</td><td class="n">${pct(x.p)}</td><td class="n">${pct(x.ci[0])}–${pct(x.ci[1])}</td><td>${x.n<10?'<span class="pill">Too few</span>':x.ci[1]<.8?'<span class="pill bad">Fix keywords</span>':x.ci[0]>=.8?'<span class="pill good">Trustworthy</span>':'<span class="pill warn">Uncertain</span>'}</td></tr>`).join("")}</tbody>`:'<tbody><tr><td class="muted">No judgments yet. Precision is unknown until someone checks the tags.</td></tr></tbody>';
+}
+
+/* ---------- import ---------- */
+function importFiles(files){
+  const msg=$("#importMsg");msg.textContent="Reading…";
+  const all=DATA.source==="import"?(DATA.rawRows||[]):[];
+  let pending=files.length;
+  [...files].forEach(f=>{
+    Papa.parse(f,{header:true,skipEmptyLines:true,complete:res=>{
+      const fname=f.name.replace(/\.csv$/i,"");
+      res.data.forEach(row=>{
+        const text=row.content||row.review_description||row.text||row.review||row.Review||"";
+        const rating=Math.round(+(row.score||row.rating||row.Rating||0));
+        const date=new Date(row.at||row.review_date||row.date||row.Date||"");
+        if(text&&rating>=1&&rating<=5&&!isNaN(date))all.push({app:String(row.app||row.App||row.app_name||fname),text:String(text),rating,date,version:verMM(row.reviewCreatedVersion||row.appVersion||row.version||""),thumbs:+(row.thumbsUpCount||0)||0});
+      });
+      if(--pending===0)finishImport(all,msg);
+    },error:()=>{msg.textContent=`Could not read ${f.name}. Save it as UTF-8 CSV and try again.`}});
+  });
+}
+function finishImport(all,msg){
+  if(!all.length){msg.textContent="No usable rows found. The file needs review text, a 1–5 rating and a date column (content/score/at or review_description/rating/review_date).";return}
+  const max=Math.max(...all.map(r=>r.date.getTime())),min=Math.min(...all.map(r=>r.date.getTime()));
+  const end=new Date(max);end.setHours(0,0,0,0);const lastMon=new Date(end.getTime()-((end.getDay()+6)%7)*864e5);
+  const W=clamp(Math.ceil((lastMon-min)/(7*864e5))+1,4,26);
+  const start=new Date(lastMon.getTime()-(W-1)*7*864e5);
+  const reviews=all.map((r,i)=>({...r,id:i,week:Math.floor((r.date-start)/(7*864e5))})).filter(r=>r.week>=0&&r.week<W);
+  const apps=[...new Set(reviews.map(r=>r.app))];
+  DATA={reviews,apps,weeks:W,source:"import",weekStart:start,rawRows:all,byApp:{}};
+  ui.ds="import";
+  if(![...$("#dsSel").options].some(o=>o.value==="import"))$("#dsSel").insertAdjacentHTML("beforeend",'<option value="import">Your imported reviews</option>');
+  $("#dsSel").value="import";
+  if(!apps.includes(ui.app))ui.app=apps[0];
+  if(ui.period>W)ui.period=4;$("#periodSel").value=String(ui.period);[...$("#periodSel").options].forEach(o=>o.disabled=+o.value>W);
+  loadTax();ROADMAP=store("rr_roadmap_import")||[];ui.ttopics=null;ui.auIds=null;ui.ftopics.clear();tagAll();fillAppSel();renderAll();
+  msg.textContent=`Loaded ${fmt(reviews.length)} reviews from the last ${W} weeks across ${apps.length} app${apps.length>1?"s":""}. Older reviews are ignored. Reviewer names and images are never read.`;
+}
+function fillAppSel(){$("#appSel").innerHTML=DATA.apps.map(a=>`<option ${a===ui.app?"selected":""}>${esc(a)}</option>`).join("")}
+
+/* ---------- events ---------- */
+function show(v){$$(".view").forEach(s=>s.classList.toggle("on",s.id==="v-"+v));$$(".nav button").forEach(b=>b.dataset.view===v?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));try{history.replaceState(null,"","#"+v)}catch(e){}Object.values(charts).forEach(c=>c.resize());window.scrollTo(0,0)}
+$$(".nav button").forEach(b=>b.addEventListener("click",()=>show(b.dataset.view)));
+$("#dsSel").addEventListener("change",e=>{const v=e.target.value;if(v==="import"&&DATA.source!=="import"){toast("Import a CSV first");e.target.value=ui.ds;return}if(v!=="import")switchDataset(v)});
+$("#appSel").addEventListener("change",e=>{ui.app=e.target.value;ui.ttopics=null;ui.auIds=null;renderAll()});
+$("#periodSel").addEventListener("change",e=>{ui.period=+e.target.value;ui.auIds=null;renderAll()});
+$("#q").addEventListener("input",e=>{ui.q=e.target.value;ui.shown=40;renderFeedback()});
+$("#fRating").addEventListener("change",e=>{ui.fr=e.target.value;renderFeedback()});
+$("#fSent").addEventListener("change",e=>{ui.fs=e.target.value;renderFeedback()});
+$("#fSort").addEventListener("change",e=>{ui.sort=e.target.value;renderFeedback()});
+$("#fMore").addEventListener("click",()=>{ui.shown+=40;renderFeedback()});
+$("#fTopics").addEventListener("click",e=>{const t=e.target.closest("[data-t]");if(!t)return;const id=t.dataset.t;ui.ftopics.has(id)?ui.ftopics.delete(id):ui.ftopics.add(id);ui.shown=40;renderFeedback()});
+$("#tTopics").addEventListener("click",e=>{const t=e.target.closest("[data-t]");if(!t)return;const id=t.dataset.t;ui.ttopics.has(id)?ui.ttopics.delete(id):ui.ttopics.size<6?ui.ttopics.add(id):toast("Compare up to 6 topics at once");renderTrends();renderAnswers()});
+$("#tAbs").addEventListener("click",()=>{ui.tmode="abs";$("#tAbs").setAttribute("aria-pressed","true");$("#tPct").setAttribute("aria-pressed","false");renderTrends()});
+$("#tPct").addEventListener("click",()=>{ui.tmode="pct";$("#tPct").setAttribute("aria-pressed","true");$("#tAbs").setAttribute("aria-pressed","false");renderTrends()});
+$("#cbAll").addEventListener("click",()=>{ui.cband="all";renderCompetitors();renderAnswers()});
+$("#cbNeg").addEventListener("click",()=>{ui.cband="neg";renderCompetitors();renderAnswers()});
+["wR","wS","wM","wC"].forEach(id=>$("#"+id).addEventListener("input",()=>{renderPrioritize();renderAnswers()}));
+$("#wUp").addEventListener("change",e=>{ui.wup=e.target.checked;renderPrioritize()});
+$("#prioTbl").addEventListener("change",e=>{const a=e.target.closest("select[data-add]");if(a){if(!a.value)return;const sc=JSON.parse($("#prioTbl").dataset.scores).find(x=>x.name===a.dataset.add);if(!sc)return;ROADMAP.push({...sc,col:a.value,app:ui.app,added:Date.now()});saveRM();renderPrioritize();renderRoadmap();toast(`Added to ${a.value}`);return}const s=e.target.closest("[data-eff]");if(!s)return;ui.effort[s.dataset.eff]=s.value;store("rr_effort",ui.effort);renderPrioritize()});
+$("#board").addEventListener("click",e=>{const m=e.target.closest("[data-move]"),d=e.target.closest("[data-del]");if(m){ROADMAP.find(x=>x.name===m.dataset.move).col=m.dataset.col}else if(d){ROADMAP=ROADMAP.filter(x=>x.name!==d.dataset.del)}else return;saveRM();renderRoadmap();renderPrioritize()});
+$("#rmCopy").addEventListener("click",()=>{const md=["# Roadmap (ReviewRadar)",`Data: ${DATA.source==="real"?"real public Play Store reviews":DATA.source==="sim"?"SIMULATED reviews":"imported reviews"}`,...["Now","Next","Later"].flatMap(c=>[`\n## ${c}`,...ROADMAP.filter(x=>x.col===c).map(x=>`- **${x.name}** (${x.app}; priority ${fmt(x.score,1)}, ${x.n} mentions, ${pct(x.share,1)} of reviews). Metric: ${METRIC[x.name]||"TBD"}. Evidence: "${x.ev}"`)])].join("\n");navigator.clipboard.writeText(md).then(()=>toast("Roadmap copied")).catch(()=>toast("Copy is blocked here. Select the cards and copy manually."))});
+$("#rmClear").addEventListener("click",()=>{$("#rmConfirm").hidden=false});
+$("#rmNo").addEventListener("click",()=>{$("#rmConfirm").hidden=true});
+$("#rmYes").addEventListener("click",()=>{ROADMAP=[];saveRM();$("#rmConfirm").hidden=true;renderRoadmap();renderPrioritize();toast("Roadmap cleared")});
+$("#auNew").addEventListener("click",()=>{drawAudit();renderAudit()});
+$("#auList").addEventListener("click",e=>{const b=e.target.closest("[data-j]");if(!b)return;const J=store(auKey())||{};const v=+b.dataset.v;if(J[b.dataset.j]===v)delete J[b.dataset.j];else J[b.dataset.j]=v;store(auKey(),J);renderAudit()});
+$("#importBtn").addEventListener("click",()=>{$("#importMsg").textContent="";$("#importDlg").showModal()});
+$("#fileIn").addEventListener("change",e=>{if(e.target.files.length)importFiles(e.target.files);e.target.value=""});
+$("#resetSample").addEventListener("click",()=>{switchDataset("real").then(()=>{$("#importMsg").textContent="Built-in real dataset restored."})});
+$("#taxBtn").addEventListener("click",()=>{$("#taxText").value=store("rr_tax_"+taxKey())||DEFAULT_TAX[taxKey()];$("#taxMsg").textContent="";$("#taxDlg").showModal()});
+$("#taxReset").addEventListener("click",()=>{$("#taxText").value=DEFAULT_TAX[taxKey()]});
+$("#taxSave").addEventListener("click",()=>{try{TAX=parseTax($("#taxText").value);store("rr_tax_"+taxKey(),$("#taxText").value);ui.ftopics.clear();ui.ttopics=null;ui.auIds=null;tagAll();renderAll();$("#taxDlg").close();toast(`Re-tagged with ${TAX.length} topics`)}catch(err){$("#taxMsg").textContent=err.message}});
+function setTheme(t){try{localStorage.setItem("rr_theme",t)}catch(e){}if(t==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",t);$$(".theme button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.th===t))}
+$$(".theme button").forEach(b=>b.addEventListener("click",()=>setTheme(b.dataset.th)));
+(()=>{let t="auto";try{t=localStorage.getItem("rr_theme")||"auto"}catch(e){}setTheme(t)})();
+const mq=matchMedia("(prefers-color-scheme: dark)");mq.addEventListener?.("change",()=>renderAll());
+new MutationObserver(()=>renderAll()).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+/* ---------- boot ---------- */
+(async()=>{await switchDataset("real");const h=(location.hash||"").slice(1);if(h&&document.getElementById("v-"+h))show(h)})();
+</script>
+</body>
+</html>

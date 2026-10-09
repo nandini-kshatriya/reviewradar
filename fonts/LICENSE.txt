@@ -1,0 +1,1 @@
+Geist and Geist Mono by Vercel. Fonts are self-hosted from the @fontsource npm packages and are licensed under the SIL Open Font License 1.1.

@@ -1,0 +1,16 @@
+Late delivery | complaint | late, delay, took long, taking long, too long, hour, hrs, waiting, wait for, not on time, on time, never delivered, not delivered, still not, der se, time pe nahi
+Cancellations & refunds | complaint | refund, cancel, money back, cancellation, paisa wapas
+Customer support | complaint | customer care, customer support, customer service, support, chat, executive, helpline, ticket, no response, not responding, customer interaction, agent
+Missing or wrong items | complaint | missing, wrong item, wrong order, wrong food, wrong dish, incomplete, not received, spill, leak, damaged, half order
+Food quality & hygiene | complaint | cold, stale, quality, hair, insect, cockroach, taste, tasteless, undercooked, hygien*, smell, food poisoning, rotten, thanda
+Fees & pricing | complaint | delivery fee, delivery charge, platform fee, packaging, surge, expensive, costly, price, charges, tax, gst, overpriced, too much money, charge, mehenga, mehnga
+Membership (Gold / One) | complaint | gold, swiggy one, membership, subscription
+Offers & coupons | complaint | coupon, offer, discount, promo, cashback, deal
+Payments | complaint | payment, upi, debited, deducted, transaction, wallet, paytm
+App bugs & login | complaint | crash, bug, glitch, not working, not opening, login, log in, otp, error, hang, loading, freez*, stuck, update
+Delivery partner conduct | complaint | delivery boy, delivery guy, delivery partner, delivery person, delivery executive, rider, valet, rude, behaviour, behavior, misbehav*
+Address & location | complaint | address, location, gps, map, wrong place, serviceable
+Restaurant availability | complaint | outlet closed, restaurant closed, not available, unavailable, no restaurant, closed
+Notifications & rating prompts | complaint | notification, spam, rate me, rating, let me in, pop up, popup
+Feature requests | request | please add, add option, add an option, should add, should have, feature, would be great, would be nice, option to, allow us, i wish, need an option
+Cash on delivery | request | cash on delivery, pay on delivery, cod option, cod not, cod is
