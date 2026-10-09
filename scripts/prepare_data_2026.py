@@ -17,7 +17,8 @@ def main(paths, out):
     raw_n = len(d)
     d["t"] = pd.to_datetime(d["review_date"], errors="coerce")
     d = d.dropna(subset=["t", "score"])
-    d["content"] = d["content"].fillna("").astype(str).str.strip()
+    # a few source reviews contain U+FFFD replacement characters from broken encoding upstream, so drop them
+    d["content"] = d["content"].fillna("").astype(str).str.replace("\ufffd", "", regex=False).str.strip()
     d = d[d["content"].str.len() > 0].drop_duplicates("review_id")
     # complete Monday to Sunday weeks only, so a partial first or last week cannot fake a change
     first = d["t"].min().normalize()
