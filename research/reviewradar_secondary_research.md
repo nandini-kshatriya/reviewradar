@@ -259,3 +259,46 @@ The portfolio story should state these gaps explicitly and **name the existing t
 - https://www.kaggle.com/datasets/saloni1712/zomato-and-swiggy-play-store-reviews
 - https://www.kaggle.com/datasets/mannacharya/blinkit-vs-zepto-vs-instamart-reviews
 - https://data.mendeley.com/datasets/456vvdfmxj/1
+
+---
+
+## 9. Verification log for the 2026 dataset and case study (10 Oct 2026)
+
+This section records how the figures in `docs/case-study.md` were checked, so anyone can repeat the checks.
+
+**Raw to used reconciliation.** The raw files at commit 019dae4 (`data/raw/swiggy.csv.gz` and `data/raw/zomato.csv.gz`) hold 237,961 reviews (78,562 Swiggy and 159,399 Zomato), dated 1 Apr 2026 00:03 to 20 Sep 2026 23:56. `scripts/prepare_data_2026.py` removes rows in this order:
+
+| Step | Rows removed | Swiggy | Zomato |
+|---|---|---|---|
+| Missing date or rating | 0 | 0 | 0 |
+| Empty text after stripping broken characters | 0 | 0 | 0 |
+| Duplicate review ID | 0 | 0 | 0 |
+| Outside complete Monday to Sunday weeks (1 to 5 Apr 2026) | 9,687 | 2,489 | 7,198 |
+| **Used in the app** | **228,274** | **76,073** | **152,201** |
+
+Re-running the script on the raw files reproduces the shipped rows exactly. The 2023 file also rebuilds row for row from the upstream CSVs (111,927 raw reviews, 58,588 used).
+
+**Independent recount.** For the last 12 weeks (29 Jun to 20 Sep 2026), a pandas recount from the raw files and the app's own JavaScript agree:
+
+| | Swiggy | Zomato |
+|---|---|---|
+| Reviews | 38,416 | 60,484 |
+| Average rating | 3.55 | 3.94 |
+| One-star share | 30.1% | 19.6% |
+| 1 to 2 star reviews | 12,486 (32.5%) | 13,322 (22.0%) |
+| App version missing (all 24 weeks) | 11.2% | 11.5% |
+
+**Method changes made after checking.**
+- Competitor gaps are also tested against a Bonferroni threshold for 16 topics (|z| above 2.96).
+- Release checks compare a version only with older versions reviewed in the same weeks (Cochran–Mantel–Haenszel), at |z| ≥ 3.
+- Priority momentum uses share of reviews instead of counts.
+- Feed-gap weeks (20 Apr to 10 May) are left out of every comparison between windows or apps.
+- The keyword "on time" was removed from *Late delivery* because it tagged praise.
+
+**Hinglish word list.** The range of 5.1% to 7.9% of reviews longer than five words is measured with whole-word, case-insensitive matches. The lower figure uses *nahi*, *hai* and *bakwas*. The upper figure uses this 44-word list:
+nahi, nhi, nahin, hai, hain, bakwas, bekar, bekaar, ghatiya, bahut, bohot, kya, kyu, kyun, accha, acha, achha, paisa, paise, mera, meri, mujhe, kabhi, kuch, yaar, bhai, wala, wale, karo, karna, diya, gaya, raha, rahe, hota, hoti, koi, sab, aur, lekin, ekdam, bilkul, jaldi, khana.
+An earlier draft quoted 7.1% from a list that was not recorded, so that figure was dropped.
+
+**Cancellation-charge pattern.** A cancellation or refund complaint counts as a charge complaint when *fee*, *fees*, *charge*, *charges*, *charged*, *deduct…* or *penalt…* appears within 80 characters of *cancel…*. This is a keyword pattern, not a hand label.
+
+**What was not verified.** Tag precision has not been audited by a person. The causes behind two thirds of the cancellations gap are unknown. None of the experiments in the case study has been run.

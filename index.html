@@ -407,7 +407,7 @@ pre.code{font-family:var(--mono);font-size:.76rem;background:var(--sunken);paddi
       </div>
       <div class="grid">
         <div class="panel flush"><div class="panel-head"><h3>Spike detection</h3><p>Last two weeks against each topic's baseline. Weeks inside a known feed gap are left out of the baseline.</p></div><div class="table-wrap"><table id="spikeTbl"></table></div></div>
-        <div class="panel flush"><div class="panel-head"><h3>Release check</h3><p>Versions grouped as major.minor with at least 40 reviews. Each version is compared with the three before it, and a change is shown only when a two-proportion test gives |z| ≥ 2. Reviews from feed-gap weeks are left out.</p></div><div class="table-wrap"><table id="verTbl"></table></div></div>
+        <div class="panel flush"><div class="panel-head"><h3>Release check</h3><p>Versions grouped as major.minor with at least 40 reviews. Each version is compared with the three before it using only reviews written in the same weeks, so a slow drift in mood is not blamed on a release. A change is shown only when |z| ≥ 3, which keeps the chance of a false alarm per release near 5% for a 16-topic taxonomy. Reviews from feed-gap weeks are left out.</p></div><div class="table-wrap"><table id="verTbl"></table></div></div>
       </div>
     </section>
 
@@ -418,7 +418,7 @@ pre.code{font-family:var(--mono);font-size:.76rem;background:var(--sunken);paddi
       <div class="filters"><div class="seg" role="group" aria-label="Rating band"><button id="cbNeg" aria-pressed="true">1 to 2 star reviews only</button><button id="cbAll" aria-pressed="false">All reviews</button></div><span class="muted small" style="max-width:70ch">Comparing only unhappy reviews is the default because the two apps' rating mix differs. It asks what unhappy users are unhappy about and removes most of the sampling skew.</span></div>
       <div class="kpis" id="compKpis"></div>
       <div class="panel"><div class="panel-head"><h3>Mentions per 100 reviews</h3></div><div class="chart-box tall"><canvas id="cComp" aria-label="Competitor comparison"></canvas></div></div>
-      <div class="panel flush"><div class="panel-head"><h3>Where you are behind or ahead</h3><p>A gap counts only when it is larger than its 95% confidence interval.</p></div><div class="table-wrap"><table id="compTbl"></table></div></div>
+      <div class="panel flush"><div class="panel-head"><h3>Where you are behind or ahead</h3><p>A gap counts only when it is larger than its 95% confidence interval. "Weakly" marks a gap that would not survive a Bonferroni correction for testing every topic at once, so treat it as a lead rather than a finding. Feed-gap weeks are left out.</p></div><div class="table-wrap"><table id="compTbl"></table></div></div>
     </section>
 
     <!-- PRIORITIZE -->
@@ -429,11 +429,11 @@ pre.code{font-family:var(--mono);font-size:.76rem;background:var(--sunken);paddi
         <div class="weights">
           <div class="wt"><label for="wR"><span><i style="background:var(--s1)"></i>Reach</span><span class="num" id="wRv"></span></label><input type="range" id="wR" min="0" max="5" value="4"><p>Share of reviews that mention the topic</p></div>
           <div class="wt"><label for="wS"><span><i style="background:var(--s2)"></i>Severity</span><span class="num" id="wSv"></span></label><input type="range" id="wS" min="0" max="5" value="3"><p>How negative those reviews are</p></div>
-          <div class="wt"><label for="wM"><span><i style="background:var(--s3)"></i>Momentum</span><span class="num" id="wMv"></span></label><input type="range" id="wM" min="0" max="5" value="2"><p>Growth in the second half of the window</p></div>
+          <div class="wt"><label for="wM"><span><i style="background:var(--s3)"></i>Momentum</span><span class="num" id="wMv"></span></label><input type="range" id="wM" min="0" max="5" value="2"><p>Change in share of reviews, second half of the window against the first</p></div>
           <div class="wt"><label for="wC"><span><i style="background:var(--s4)"></i>Competitive gap</span><span class="num" id="wCv"></span></label><input type="range" id="wC" min="0" max="5" value="2"><p>How far behind competitors you are</p></div>
         </div>
         <label class="toggle"><input type="checkbox" id="wUp"><span>Weight reach by upvotes<span>Each review counts 1 + log₂(1 + upvotes), so a complaint many users agreed with counts more than one loud reviewer.</span></span></label>
-        <details class="formula-d"><summary>How the score is calculated</summary><div class="formula">priority = 100 × Σ(weight × normalised signal) ÷ Σ weights × confidence ÷ effort<br>competitive gap = your topic share minus competitors' pooled share among 1 to 2 star reviews (all reviews if fewer than 50 per app)<br>confidence = 1.0 at 30 or more mentions, 0.85 at 12 or more, otherwise 0.6<br>effort = S 1.0, M 1.5, L 2.5</div></details>
+        <details class="formula-d"><summary>How the score is calculated</summary><div class="formula">priority = 100 × Σ(weight × normalised signal) ÷ Σ weights × confidence ÷ effort<br>competitive gap = your topic share minus competitors' pooled share among 1 to 2 star reviews (all reviews if fewer than 50 per app)<br>momentum = relative change in the topic's share of reviews from the first half of the window to the second<br>feed-gap weeks are left out of every signal<br>confidence = 1.0 at 30 or more mentions, 0.85 at 12 or more, otherwise 0.6<br>effort = S 1.0, M 1.5, L 2.5</div></details>
       </div>
       <div class="panel flush"><div class="table-wrap"><table id="prioTbl"></table></div></div>
     </section>
@@ -455,595 +455,427 @@ pre.code{font-family:var(--mono);font-size:.76rem;background:var(--sunken);paddi
 
     <section class="view" id="v-case">
       <article class="doc" id="caseDoc"><!--CASE:START--><h1>ReviewRadar: turning app reviews into a roadmap you can defend</h1>
-<p><em>Product case study · Nandini Kshatriya · October 2026</em></p>
+<p><em>Product case study · Nandini Kshatriya · October 2026 · about a 6-minute read</em></p>
 <blockquote>
 <p><strong>How to read the labels.</strong></p>
 <ul>
-<li><span class="tag v">Verified</span> a published figure I read in the source itself, with its date and sample.</li>
-<li><span class="tag q">Qualitative</span> an observation or quote, not a measurement.</li>
-<li><span class="tag r">My analysis</span> a number I computed from public review data. Every one can be reproduced from <code>scripts/</code> and the app.</li>
+<li><span class="tag v">Verified</span> a published figure I read in the source itself.</li>
+<li><span class="tag r">My analysis</span> a number I computed from public review data. Each one can be reproduced in the app or from <code>scripts/</code>.</li>
+<li><span class="tag q">Qualitative</span> a quote or observation, not a measurement.</li>
 <li><span class="tag a">Assumption</span> my judgment, not yet tested.</li>
-<li><span class="tag s">Simulated</span> generated demo data.</li>
 </ul>
-<p>I did not interview or survey anyone for this project. All user evidence is secondary.</p>
+<p>I did not interview or survey anyone, and I have not run the experiment proposed here. All user evidence comes from public app reviews and published research.</p>
 </blockquote>
-<h2>In short</h2>
-<ul>
-<li><strong>Problem.</strong> PMs at growing consumer apps get thousands of store reviews a month. Most read a few, remember the angriest ones, and argue priorities from anecdotes.</li>
-<li><strong>What I built.</strong> A browser-only workspace that tags reviews into topics, checks each release for regressions, compares complaint <em>rates</em> with a competitor fairly, and ranks what to fix with a score you can explain. Every ranked item links to the reviews behind it.</li>
-<li><strong>What the real data showed.</strong> I ran it on <strong>228,274 public Play Store reviews of Swiggy and Zomato written between 6 April and 20 September 2026.</strong> <span class="tag r">My analysis</span><ul>
-<li>On raw rates, Swiggy looks worse than Zomato on <strong>14 of 16</strong> topics in the last 12 weeks.</li>
-<li>Comparing only unhappy (1 to 2 star) reviews, Swiggy is clearly behind on <strong>5</strong>, clearly ahead on <strong>4</strong>, and level on the rest. The raw view mostly reflects that Swiggy&#39;s reviewers give one star twice as often (30% vs 20%).</li>
-<li>The gap that survives is <strong>cancellations and refunds</strong>: 19.1 mentions per 100 unhappy Swiggy reviews against 12.4 for Zomato. Customer support is Swiggy&#39;s most common complaint, but Zomato&#39;s unhappy users raise it just as often, so it is an industry problem rather than a competitive one.</li>
-<li>The same check on an older 2023 dataset gave the same lesson, which tells me the method matters more than any single finding.</li>
-</ul>
-</li>
-<li><strong>Honest positioning.</strong> Basic review tagging is already cheap (Appbot starts at $49 a month). ReviewRadar&#39;s angle is narrower: release-linked regression checks, benchmarks that control for rating mix, and a priority score a PM can defend in a review meeting.</li>
-</ul>
-<h2>1. Problem</h2>
-<p>Store reviews are the cheapest continuous customer signal a consumer app has. They are short, unstructured, sometimes written in Hinglish, and they bunch up around releases. That creates three common failures:</p>
-<ol>
-<li><strong>Regressions are noticed late</strong>, because nobody tracks topic share by app version.</li>
-<li><strong>Chronic problems get under-weighted</strong>, because they never spike.</li>
-<li><strong>Competitor comparisons are naive.</strong> Raw counts or raw rates ignore that two apps attract differently unhappy reviewers.</li>
-</ol>
-<p><strong>Job to be done.</strong> &quot;When I plan the next sprint, I want to know which customer problems are biggest, growing, or worse than a competitor&#39;s, so I can defend my priorities with evidence instead of opinion.&quot;</p>
-<h2>2. Research (secondary only)</h2>
-<h3>2a. Do product teams struggle to turn feedback into priorities?</h3>
-<p>Every survey below comes from a company that sells PM or feedback software, and none publishes its sampling method. I read them as directional.</p>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Finding</th>
-<th>Source</th>
-<th>Date and sample</th>
-<th>Label</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>1 in 3 teams have no process for capturing feedback. Only 1 in 10 capture it from every source. 51% are confident their roadmap reflects user needs.</td>
-<td>Productboard and Product Collective, <em>Product Excellence Report</em></td>
-<td>2020, 700+ PMs</td>
-<td><span class="tag v">Verified</span> vendor survey</td>
-</tr>
-<tr>
-<td>More than half say decisions follow the highest-paid person&#39;s opinion more than data. 3 in 5 say the roadmap does not reflect segment needs.</td>
-<td>Productboard and Product Collective</td>
-<td>2021, 850+ respondents</td>
-<td><span class="tag v">Verified</span> vendor survey</td>
-</tr>
-<tr>
-<td>35% say customer feedback drove their best feature release</td>
-<td>Pendo and Product Collective</td>
-<td>Feb 2019, 300 North American PM leaders</td>
-<td><span class="tag v">Verified</span> vendor survey, old</td>
-</tr>
-<tr>
-<td>&quot;How do you go about evaluating the accuracy of the themes…?&quot; asked on a feedback-analytics launch</td>
-<td>Hacker News, Launch HN: Thematic</td>
-<td>Aug 2017</td>
-<td><span class="tag q">Qualitative</span></td>
-</tr>
-<tr>
-<td>Loud customers distort priorities. Segment feedback and look for recurring patterns.</td>
-<td>Mind the Product</td>
-<td>Feb 2025</td>
-<td><span class="tag q">Qualitative</span> opinion</td>
-</tr>
-</tbody></table></div>
-<h3>2b. What does academic work say about reviews as a signal?</h3>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Finding</th>
-<th>Source</th>
-<th>Data</th>
-<th>Label</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Feedback bunches up in the days after a release. 52% of reviews cover more than one topic.</td>
-<td>Pagano and Maalej, RE 2013</td>
-<td>1.1M iOS reviews, 1,100 hand-coded</td>
-<td><span class="tag v">Verified</span></td>
-</tr>
-<tr>
-<td>Only 35.1% of reviews are &quot;informative&quot; on average. Manual reading took about 7.4 person-hours against 0.5 with tooling.</td>
-<td>Chen et al., AR-Miner, ICSE 2014</td>
-<td>4 Android apps</td>
-<td><span class="tag v">Verified</span></td>
-</tr>
-<tr>
-<td>A four-class taxonomy (bug, feature request, experience, rating) reaches 88 to 92% precision</td>
-<td>Maalej et al., <em>Requirements Engineering</em> 2016</td>
-<td>4,400 labelled reviews</td>
-<td><span class="tag v">Verified</span></td>
-</tr>
-<tr>
-<td>88% of apps get 20 or fewer reviews a day, so review mining helps less at low volume</td>
-<td>McIlroy et al., CACM 2017</td>
-<td>10,713 Google Play apps</td>
-<td><span class="tag v">Verified</span></td>
-</tr>
-<tr>
-<td>The best Hinglish sentiment system scored F1 75%</td>
-<td>SemEval-2020 Task 9 (SentiMix)</td>
-<td>About 20K Hinglish tweets</td>
-<td><span class="tag v">Verified</span></td>
-</tr>
-</tbody></table></div>
-<p><strong>What this changed in the product.</strong> Tags are multi-label because half of reviews mix topics. There is a version table because complaints follow releases. Alerts have volume gates because small apps are noisy. And there is a tag audit, because even published classifiers make mistakes and my keyword taxonomy is simpler than theirs.</p>
-<h3>2c. Which data did I use, and can I trust it?</h3>
-<p>I wanted reviews from 2025 or 2026. The Play Store, Kaggle and Hugging Face were not reachable from my build environment, so I could not scrape fresh reviews myself. Instead I looked for a public dataset with a documented method and found one.</p>
+<h2>Summary</h2>
 <div class="table-wrap"><table>
 <thead>
 <tr>
 <th></th>
-<th>2026 dataset (default)</th>
-<th>2023 dataset (kept for comparison)</th>
+<th></th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Source</td>
-<td><a href="https://github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews" target="_blank" rel="noopener">ba-capstone-app-reviews</a> on GitHub, commit 019dae4</td>
-<td><a href="https://github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence" target="_blank" rel="noopener">tanishka-anand compilation</a> of a Kaggle scrape</td>
+<td><strong>Question</strong></td>
+<td>If I were a PM at Swiggy, which customer problem should I fix first, and could I defend that choice with evidence?</td>
 </tr>
 <tr>
-<td>Collection method</td>
-<td><code>google-play-scraper</code>, every English review from India posted 1 Apr to 20 Sep 2026, sorted newest first. Documented in the repo&#39;s <code>DATA_SOURCES.md</code>.</td>
-<td>Not documented</td>
+<td><strong>What I built</strong></td>
+<td>ReviewRadar, a browser-based tool that tags app reviews into topics, compares complaint rates with a competitor fairly, checks releases for regressions and ranks problems with an explainable score</td>
 </tr>
 <tr>
-<td>Raw size</td>
-<td>78,562 Swiggy and 159,399 Zomato reviews</td>
-<td>58,588 reviews across both apps</td>
+<td><strong>Evidence</strong></td>
+<td>228,274 public Google Play reviews of Swiggy and Zomato, 6 April to 20 September 2026</td>
 </tr>
 <tr>
-<td>Used in the app</td>
-<td>228,274 reviews in 24 complete weeks (6 Apr to 20 Sep 2026)</td>
-<td>58,588 reviews in 26 weeks (23 Jan to 23 Jul 2023)</td>
+<td><strong>Key insight</strong></td>
+<td>Swiggy looks worse than Zomato on 14 of 16 topics at first glance. On a fair comparison only 4 gaps are real. The largest, <strong>cancellations and refunds</strong>, survives every robustness check, and about a third of it is complaints about cancellation charges.</td>
 </tr>
 <tr>
-<td>How I checked it</td>
-<td>Row counts and date range match the upstream documentation exactly. Every review ID is unique. My pandas recount of average rating and one-star share matches the app.</td>
-<td>Row counts only</td>
+<td><strong>Recommendation</strong></td>
+<td>A short free-cancellation window right after an order is placed, with the exact charge shown before any later cancellation</td>
 </tr>
 <tr>
-<td>Known problems</td>
-<td>A Play Store feed gap from 21 Apr to 5 May 2026, when positive reviews went missing. The app shades those weeks and leaves them out of spike baselines and release checks. 68% of reviews are three words or fewer.</td>
-<td>Swiggy&#39;s file is 65% one-star against 33% for Zomato, which points to different sampling</td>
+<td><strong>How to measure it</strong></td>
+<td>Cancellation-charge complaints per 1,000 cancelled orders, tested in a three-arm A/B test (planned, not run)</td>
 </tr>
 </tbody></table></div>
-<p>I did not collect this data and I cannot re-run the scrape myself, so I cite it as a third-party dataset. No reviewer names or photos are in either file.</p>
-<h3>2d. What did the 2026 reviews show? <span class="tag r">My analysis</span></h3>
-<p>Swiggy is &quot;your app&quot; and Zomato is the competitor. The window is the last 12 weeks (29 Jun to 20 Sep 2026) unless I say otherwise. Default taxonomy.</p>
+<h2>1. Problem and user</h2>
+<p><strong>The problem.</strong> Consumer apps like Swiggy receive thousands of store reviews a week. They are the cheapest continuous signal of customer pain, but they are short, messy and loudest when people are angry. So teams read a few, remember the worst, and argue priorities from anecdotes. In Productboard&#39;s 2021 survey of 850+ respondents, more than half said decisions follow the highest-paid person&#39;s opinion more than data <span class="tag v">Verified</span> (a vendor survey, so directional).</p>
+<p><strong>The user.</strong> A PM or APM at a growing Indian consumer app who prioritises weekly without a dedicated analyst <span class="tag a">Assumption</span>, based on PM job descriptions, not interviews. <em>&quot;When I plan the next sprint, I want to know which customer problems are biggest, growing, or worse than a competitor&#39;s, so I can defend my priorities with evidence.&quot;</em></p>
+<p><strong>Why naive analysis fails.</strong> Three traps appear in real review data, and each one shaped the tool:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Observation</th>
-<th>Number</th>
+<th>Trap</th>
+<th>What goes wrong</th>
+<th>What ReviewRadar does</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Reviews in window</td>
-<td>38,416 Swiggy and 60,484 Zomato</td>
+<td>Raw competitor comparison</td>
+<td>The app with harsher reviewers looks worse on everything</td>
+<td>Compares unhappy (1 to 2 star) reviews with unhappy reviews, corrected for testing many topics</td>
+</tr>
+<tr>
+<td>Counting mentions over time</td>
+<td>Volume swings. Zomato&#39;s halved between April and September 2026.</td>
+<td>Tracks each topic&#39;s share of reviews</td>
+</tr>
+<tr>
+<td>Blaming the latest release</td>
+<td>Mood drifts over months, so newer versions look worse</td>
+<td>Compares versions only within the same weeks</td>
+</tr>
+</tbody></table></div>
+<h2>2. Research and insights</h2>
+<p><strong>The data.</strong> A documented public scrape of every English Google Play review from India for Swiggy and Zomato, 1 April to 20 September 2026. I rebuilt it from the raw files and matched it to the collectors&#39; documentation. Of 237,961 raw reviews, I use 228,274, dropping only a partial first week (1 to 5 April). A reported feed gap from 21 April to 5 May, when positive reviews went missing, is left out of every comparison. 68% of reviews are three words or fewer, so only about 20% mention a specific topic.</p>
+<p>Swiggy is &quot;my app&quot; and Zomato the competitor. Figures cover the last 12 weeks (29 June to 20 September 2026) <span class="tag r">My analysis</span>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>Swiggy</th>
+<th>Zomato</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Reviews</td>
+<td>38,416</td>
+<td>60,484</td>
 </tr>
 <tr>
 <td>Average written-review rating</td>
-<td>3.55 Swiggy and 3.94 Zomato</td>
+<td>3.55</td>
+<td>3.94</td>
 </tr>
 <tr>
 <td>One-star share</td>
-<td>30% Swiggy and 20% Zomato</td>
+<td>30%</td>
+<td>20%</td>
 </tr>
 <tr>
-<td>Topics where Swiggy looks behind on raw rates</td>
-<td>14 of 16</td>
-</tr>
-<tr>
-<td>Topics where Swiggy is behind among 1 to 2 star reviews (95% interval excludes zero)</td>
-<td>5 of 16: cancellations and refunds, late delivery, offers and coupons, app bugs and login, payments</td>
-</tr>
-<tr>
-<td>Biggest adjusted gap</td>
-<td>Cancellations and refunds, 19.1 vs 12.4 mentions per 100 unhappy reviews (±0.9)</td>
-</tr>
-<tr>
-<td>Customer support among unhappy reviews</td>
-<td>22.4 Swiggy vs 21.5 Zomato (±1.0), no clear gap</td>
-</tr>
-<tr>
-<td>Where Swiggy is ahead among unhappy reviews</td>
-<td>Cash on delivery, fees and pricing, food quality, membership</td>
-</tr>
-<tr>
-<td>Top three priorities at default weights</td>
-<td>Customer support (7.5% of reviews), cancellations and refunds (6.4%), late delivery (6.2%)</td>
-</tr>
-<tr>
-<td>Same ranking with upvote weighting on</td>
-<td>Top five unchanged, so a few loud reviews are not driving it</td>
-</tr>
-<tr>
-<td>Release checks for Swiggy</td>
-<td>v4.111 (first seen 17 Jun): missing or wrong items rose from 1.3% to 2.0% of reviews (z = 3.8). v4.113 (17 Jul): app bugs and login rose from 1.0% to 1.5% (z = 3.3).</td>
-</tr>
-<tr>
-<td>Release checks for Zomato</td>
-<td>Average rating fell with each version from v19.5 (4.27) to v19.8 (3.99). Customer support rose in v19.6 (2.5% to 4.0%, z = 9.1) and again in v19.8 (3.6% to 4.4%, z = 6.0).</td>
-</tr>
-<tr>
-<td>Zomato volume and mood</td>
-<td>Weekly reviews fell from about 9,700 in April to about 4,500 to 5,000 by September. The 1 to 2 star share rose from 16.1% in the first 12 weeks to 22.0% in the last 12.</td>
-</tr>
-<tr>
-<td>Spikes in the last two weeks</td>
-<td>None for Swiggy. Its complaints are steady and long-running.</td>
-</tr>
-<tr>
-<td>Very short reviews</td>
-<td>68% are three words or fewer (&quot;good&quot;, &quot;nice app&quot;). Only 20% of all reviews match any topic, so the useful text lives in about a quarter of reviews.</td>
+<td>Unhappy (1 to 2 star) reviews</td>
+<td>12,486 (32.5%)</td>
+<td>13,322 (22.0%)</td>
 </tr>
 </tbody></table></div>
-<p><strong>What a PM at Swiggy could take from this.</strong> Refunds and cancellations are where Swiggy loses to Zomato among unhappy customers, and the gap is large and stable across both windows. Support is the most-mentioned issue, but fixing it would not differentiate Swiggy because Zomato has the same problem. The two release regressions are small but statistically clear, and both are cheap to investigate. <span class="tag a">Assumption</span> on what a Swiggy PM would prioritise. I have no inside data on cost or impact.</p>
-<p><strong>Qualitative themes from reading reviews</strong> <span class="tag q">Qualitative</span></p>
-<ul>
-<li>The most-upvoted Swiggy review in the window (2,590 upvotes, Aug 2026) describes insects in food and a support reply that offered no fix. It sits at the overlap of food quality and support, which is why tags are multi-label.</li>
-<li>Refund complaints often mention being charged a cancellation fee after a long delay, which points at policy as much as operations.</li>
-<li>Forced rating prompts still appear, so the <em>Notifications and rating prompts</em> topic stays in the taxonomy.</li>
-</ul>
-<p><strong>Hinglish.</strong> I expected code-mixed reviews to be the headline problem. In the 2026 data, 7.1% of reviews longer than five words contain common Hinglish words such as <em>nahi</em>, <em>hai</em> or <em>bakwas</em>, and only 0.33% contain Devanagari, probably because the scrape asked for English. Hinglish keywords are supported, but I treat this as hygiene rather than the pitch. <span class="tag r">My analysis</span> using a simple word list, so this is a rough estimate.</p>
-<h3>2e. Does the method hold on a second dataset?</h3>
-<p>The 2023 data came from a different, undocumented collection, so I do not compare the two years directly. What I can compare is whether the raw-versus-adjusted lesson holds.</p>
+<h3>Insight 1: Most of Swiggy&#39;s apparent gaps disappear on a fair comparison</h3>
+<p>On raw rates, Swiggy looks worse on <strong>14 of 16</strong> topics. But more of its reviewers are unhappy to begin with. Comparing unhappy reviews only, and correcting for testing 16 topics at once, Swiggy is clearly behind on <strong>4</strong> topics and clearly ahead on <strong>2</strong> (cash on delivery and membership) <span class="tag r">My analysis</span>. A separately collected 2023 dataset showed the same pattern, with Swiggy&#39;s &quot;behind&quot; topics falling from 9 to 1.</p>
+<h3>Insight 2: Cancellations and refunds is the largest gap that holds up</h3>
+<p>I re-tested each gap on longer reviews only, since Swiggy&#39;s unhappy reviews are longer (median 14 words against 10) and longer reviews match more keywords, and on the earlier 12 weeks.</p>
+<p>Mentions per 100 unhappy reviews, Swiggy vs Zomato <span class="tag r">My analysis</span>:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th></th>
-<th>2023 (Swiggy, 12 weeks)</th>
-<th>2026 (Swiggy, 12 weeks)</th>
+<th>Topic</th>
+<th>Last 12 weeks</th>
+<th>Longer reviews only</th>
+<th>Earlier 12 weeks</th>
+<th>Verdict</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Behind on raw rates</td>
-<td>9 of 16</td>
-<td>14 of 16</td>
+<td><strong>Cancellations and refunds</strong></td>
+<td><strong>19.1 vs 12.4</strong></td>
+<td><strong>26.8 vs 19.3</strong></td>
+<td><strong>20.7 vs 12.5</strong></td>
+<td><strong>Holds everywhere, largest gap</strong></td>
 </tr>
 <tr>
-<td>Behind among 1 to 2 star reviews</td>
-<td>2 of 16</td>
-<td>5 of 16</td>
+<td>App bugs and login</td>
+<td>3.5 vs 1.7</td>
+<td>4.5 vs 2.5</td>
+<td>3.3 vs 1.6</td>
+<td>Holds, small reach</td>
 </tr>
 <tr>
-<td>One-star share, Swiggy vs Zomato</td>
-<td>63% vs 32%</td>
-<td>30% vs 20%</td>
+<td>Offers and coupons</td>
+<td>6.2 vs 4.0</td>
+<td>7.9 vs 4.9</td>
+<td>5.7 vs 4.3</td>
+<td>Holds, but 43% of its tags are on 4 to 5 star reviews</td>
+</tr>
+<tr>
+<td>Late delivery</td>
+<td>16.1 vs 13.8</td>
+<td>20.1 vs 19.0</td>
+<td>19.0 vs 13.8</td>
+<td>Mostly disappears when length is controlled</td>
+</tr>
+<tr>
+<td>Customer support</td>
+<td>22.4 vs 21.5</td>
+<td>30.0 vs 31.7</td>
+<td>24.3 vs 21.2</td>
+<td>No stable gap</td>
 </tr>
 </tbody></table></div>
-<p>In both datasets the raw view overstated the gaps by a factor of two or more. That is the finding I would bring to an interview, because it is about how a PM should read evidence, not about Swiggy.</p>
-<h2>3. Users</h2>
-<ul>
-<li><strong>Primary.</strong> A PM or APM at a Series A to C Indian consumer app who owns a surface and runs weekly prioritisation without a dedicated researcher or analyst. <span class="tag a">Assumption</span> inferred from job descriptions that ask PMs to be &quot;the voice of the customer&quot; and &quot;data-driven&quot; (Flipkart, PhonePe and Razorpay postings read in Oct 2026).</li>
-<li><strong>Secondary.</strong> A CX lead who needs early warning after a release.</li>
-<li><strong>Not for.</strong> Apps with only a handful of reviews a day. McIlroy et al. show most apps fall in this group, and ReviewRadar says &quot;not enough data&quot; instead of inventing trends.</li>
-</ul>
-<h2>4. Competitors</h2>
+<h3>Insight 3: Cancellation charges drive a third of that gap</h3>
+<p>I split cancellation complaints with simple text patterns <span class="tag r">My analysis</span>:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>Product</th>
-<th>What it does well</th>
-<th>Cheapest public price (Oct 2026)</th>
-<th>Gap for my user</th>
+<th>Inside cancellation and refund complaints</th>
+<th>Swiggy</th>
+<th>Zomato</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Appbot</strong></td>
-<td>Review topics, sentiment, competitor sources, translation</td>
-<td>$49 a month for 1 user</td>
-<td>Closest and cheap, but not positioned on release regressions or explainable priority</td>
+<td>Fee or charge mentioned near &quot;cancel&quot;, per 100 unhappy reviews</td>
+<td><strong>3.5</strong></td>
+<td><strong>1.0</strong></td>
 </tr>
 <tr>
-<td><strong>AppFollow</strong></td>
-<td>Review replies, ASO, workflows</td>
-<td>Free tier, paid tiers vary (third-party tracker, not verified)</td>
-<td>Built for reply operations</td>
+<td>Refund never arrived, per 100 unhappy reviews</td>
+<td>4.3</td>
+<td>3.6 (no clear difference)</td>
 </tr>
 <tr>
-<td><strong>Productboard Pulse</strong></td>
-<td>AI topics and trends from Play and App Store reviews inside a PM suite</td>
-<td>Not public. Business plan needs at least 5 makers.</td>
-<td>Seat minimum and suite overhead</td>
-</tr>
-<tr>
-<td><strong>Enterpret</strong></td>
-<td>Adaptive taxonomy across every feedback source</td>
-<td>Contact sales</td>
-<td>Enterprise onboarding</td>
-</tr>
-<tr>
-<td><strong>Unwrap.ai</strong></td>
-<td>Customer intelligence and alerts</td>
-<td>From $24,000 a year</td>
-<td>Beyond an early-stage budget</td>
-</tr>
-<tr>
-<td><strong>Thematic</strong></td>
-<td>Theme discovery and dashboards</td>
-<td>$2,000 a month (Capterra listing)</td>
-<td>Price and setup effort</td>
-</tr>
-<tr>
-<td><strong>SentiSum</strong></td>
-<td>Support and review analytics for CX teams</td>
-<td>From $100,000 a year</td>
-<td>Enterprise CX buyer</td>
-</tr>
-<tr>
-<td><strong>Canny</strong></td>
-<td>Feature-request boards</td>
-<td>Free, Pro at $79 a month</td>
-<td>Users must post requests, so no review mining</td>
-</tr>
-<tr>
-<td><strong>Spreadsheet and reading</strong></td>
-<td>Free and flexible</td>
-<td>None</td>
-<td>Slow, anecdotal, no trends</td>
+<td>Complaint also mentions a delay</td>
+<td>27%</td>
+<td>29%</td>
 </tr>
 </tbody></table></div>
-<p>Prices come from vendor pages or listings checked in October 2026 <span class="tag v">Verified</span>.</p>
-<p><strong>Market signals.</strong> MonkeyLearn went to Medallia (2022), data.ai to Sensor Tower (2024) and Kraftful to Amplitude (2025). Review analytics keeps getting absorbed into bigger suites. Several student projects on GitHub also analyse Zomato and Swiggy reviews, so the idea alone is not new.</p>
-<p><strong>Positioning.</strong> For a PM who has outgrown reading reviews by hand but cannot justify an enterprise tool, ReviewRadar answers three questions that cheaper tools do not put first.</p>
-<ul>
-<li>Did the last release make anything worse?</li>
-<li>Are we really behind the competitor once rating mix is controlled for?</li>
-<li>What should we fix first, and which reviews prove it?</li>
-</ul>
-<h2>5. User journey</h2>
-<ol>
-<li><strong>Load.</strong> Use the built-in 2026 Swiggy and Zomato data, or export your own app and a competitor with the open-source <code>google-play-scraper</code> and drop in the CSVs. Nothing is uploaded.</li>
-<li><strong>Orient.</strong> Overview leads with one sentence that answers &quot;what matters most right now&quot;, then shows volume, rating, negative share, taxonomy coverage, spike alerts and plain-language insights.</li>
-<li><strong>Check releases.</strong> Trends compares each version&#39;s topic share with the three before it and flags only statistically clear changes.</li>
-<li><strong>Compare fairly.</strong> Competitors shows mentions per 100 reviews with 95% intervals and a toggle to compare only unhappy reviews.</li>
-<li><strong>Decide.</strong> Prioritize ranks topics by reach, severity, momentum and the adjusted competitive gap. The PM sets strategy weights and effort, reads the evidence, and adds items to Now, Next or Later.</li>
-<li><strong>Trust-check.</strong> Tag audit samples 25 tagged reviews. The PM marks each tag right or wrong, and precision appears per topic with an interval once there are at least 10 judgments.</li>
-<li><strong>Share.</strong> Copy the roadmap as Markdown with the metric and a real quote attached.</li>
-</ol>
-<h2>6. PRD (MVP)</h2>
+<p>Charges explain about 2.5 of the 6.8-point gap, and the difference is stable across six four-week blocks. Delays do not explain it, because both apps&#39; complaints mention them equally often. When Swiggy users say they were charged:</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>ID</th>
-<th>User story</th>
-<th>Acceptance criteria</th>
+<th>Situation</th>
+<th>Share of Swiggy charge complaints</th>
+<th>Swiggy vs Zomato, per 100 unhappy reviews</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>R1</td>
-<td>As a PM, I can load reviews for my app and competitors</td>
-<td>The built-in dataset loads in under 5 seconds on desktop broadband. CSV import accepts google-play-scraper and Kaggle column names. An <code>App</code> column splits apps. Reviewer names and images are never read.</td>
+<td>Cancelled by mistake or within moments of ordering</td>
+<td>22%</td>
+<td>0.77 vs 0.14</td>
 </tr>
 <tr>
-<td>R2</td>
-<td>As a PM, reviews are tagged into topics I control</td>
-<td>Editable taxonomy with multi-label tags. Keywords match whole words plus common endings, and <code>*</code> marks a prefix. A coverage KPI and an Untagged filter show what the taxonomy misses.</td>
+<td>Cancelled because the order was running late</td>
+<td>24%</td>
+<td>0.84 vs 0.37</td>
 </tr>
 <tr>
-<td>R3</td>
-<td>As a PM, I am warned when a topic spikes</td>
-<td>Alert when the last two weeks&#39; share of reviews is more than 2 standard deviations above the topic&#39;s baseline with at least 4 mentions a week. Known data-gap weeks are excluded from the baseline.</td>
-</tr>
-<tr>
-<td>R4</td>
-<td>As a PM, I can tie changes to releases</td>
-<td>Versions grouped by major.minor with at least 40 reviews. Two-proportion z-test against the previous three versions. Only changes with |z| ≥ 2 are shown.</td>
-</tr>
-<tr>
-<td>R5</td>
-<td>As a PM, I can compare with competitors fairly</td>
-<td>Rates per 100 reviews with 95% intervals, a 1 to 2 star comparison, and an adjusted gap inside the priority score when each app has at least 50 unhappy reviews</td>
-</tr>
-<tr>
-<td>R6</td>
-<td>As a PM, I get a ranked list I can defend</td>
-<td>Visible formula, adjustable weights, confidence by sample size, an effort divisor, evidence quotes and optional upvote weighting</td>
-</tr>
-<tr>
-<td>R7</td>
-<td>As a PM, I can carry decisions into planning</td>
-<td>Now, Next and Later board with a suggested success metric per topic. The Markdown export names the data source.</td>
-</tr>
-<tr>
-<td>R8</td>
-<td>As a PM, I know how far to trust the tags</td>
-<td>Tag audit with per-topic precision and Wilson 95% intervals. A topic is marked &quot;fix keywords&quot; when its upper bound is below 80%.</td>
+<td>Charged although the restaurant, rider or app cancelled</td>
+<td>8%</td>
+<td>0.28 vs 0.08</td>
 </tr>
 </tbody></table></div>
-<p><strong>Non-goals for the MVP.</strong> Reply management and ASO (Appbot and AppFollow own these), support-ticket ingestion, multi-user workspaces and live store connectors.</p>
-<h2>7. MVP scope and trade-offs</h2>
+<p>The patterns overlap, and about half of complaints fit none of them. Users name the fix themselves <span class="tag q">Qualitative</span>: <em>&quot;no 30 sec cancelation window&quot;</em> and <em>&quot;There should be a buffer time before the preparation of an order starts, like 60 seconds atleast&quot;</em>.</p>
+<h2>3. Prioritization</h2>
+<p>ReviewRadar&#39;s priority score (reach, severity, momentum and competitive gap, with adjustable weights) puts customer support (49.7) and cancellations and refunds (49.1) in a near tie at the top. The score ranks problems. Choosing one needs judgment about where Swiggy can actually win.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
-<th>I chose</th>
-<th>Over</th>
-<th>What it costs</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>A keyword taxonomy</td>
-<td>An LLM classifier</td>
-<td>Misses paraphrase and sarcasm. In return it is free, instant, private and auditable, and the tag audit measures how wrong it is.</td>
-</tr>
-<tr>
-<td>Share-based spike alerts</td>
-<td>Count-based alerts</td>
-<td>Slower to react when volume and share rise together. Zomato&#39;s weekly reviews halved between April and September 2026, and Swiggy&#39;s ranged from 1,114 (inside the feed gap) to 3,992 a week, so counts would have been mostly noise.</td>
-</tr>
-<tr>
-<td>Comparing unhappy reviews with unhappy reviews</td>
-<td>Raw rates</td>
-<td>Smaller samples and wider intervals. It removed most of the false gaps in both datasets.</td>
-</tr>
-<tr>
-<td>Running everything in the browser</td>
-<td>A backend with accounts</td>
-<td>No team sharing yet. Imported reviews never leave the PM&#39;s machine, which matters for a first trial.</td>
-</tr>
-<tr>
-<td>A documented third-party dataset</td>
-<td>Scraping it myself</td>
-<td>I depend on someone else&#39;s collection. I verified it against its own documentation and kept every caveat visible in the app.</td>
-</tr>
-<tr>
-<td>Leaving out a live Play Store connector</td>
-<td>Convenience</td>
-<td>Users must export CSVs. It avoids scraping-terms risk and maintenance until the value is proven.</td>
-</tr>
-</tbody></table></div>
-<h2>8. Prioritizing ReviewRadar&#39;s own features (RICE)</h2>
-<p>Reach is the number of PMs in an imagined pilot of 20. Impact (0.5 to 3), confidence and effort are my estimates <span class="tag a">Assumption</span>.</p>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Feature</th>
-<th>Reach</th>
-<th>Impact</th>
-<th>Confidence</th>
-<th>Effort (weeks)</th>
-<th>RICE</th>
+<th>Candidate</th>
+<th>Share of Swiggy reviews</th>
+<th>Real gap vs Zomato?</th>
+<th>Cause specific enough to act on?</th>
 <th>Decision</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Rating-mix-adjusted benchmark</td>
-<td>16</td>
-<td>2</td>
-<td>80%</td>
-<td>0.5</td>
-<td>51</td>
-<td>MVP</td>
+<td>Customer support</td>
+<td>7.5%</td>
+<td>No</td>
+<td>No, a symptom of many issues</td>
+<td>Guardrail</td>
 </tr>
 <tr>
-<td>Evidence-linked prioritisation</td>
-<td>20</td>
-<td>3</td>
-<td>80%</td>
-<td>1.5</td>
-<td>32</td>
-<td>MVP</td>
+<td><strong>Cancellations and refunds</strong></td>
+<td><strong>6.4%</strong></td>
+<td><strong>Yes, robust</strong></td>
+<td><strong>Partly, charges stand out</strong></td>
+<td><strong>Focus</strong></td>
 </tr>
 <tr>
-<td>Tag audit</td>
-<td>20</td>
-<td>1</td>
-<td>80%</td>
-<td>0.5</td>
-<td>32</td>
-<td>MVP</td>
+<td>Late delivery</td>
+<td>5.6%</td>
+<td>Not robust</td>
+<td>Operations-heavy</td>
+<td>Not now</td>
 </tr>
 <tr>
-<td>Release regression check</td>
-<td>20</td>
-<td>2</td>
-<td>70%</td>
-<td>1</td>
-<td>28</td>
-<td>MVP</td>
+<td>Offers and coupons</td>
+<td>3.3%</td>
+<td>Yes</td>
+<td>Unclear, many tags are praise</td>
+<td>Fix the taxonomy first</td>
 </tr>
 <tr>
-<td>LLM topic discovery for untagged reviews</td>
-<td>20</td>
-<td>2</td>
-<td>50%</td>
-<td>2</td>
-<td>10</td>
-<td>v2</td>
-</tr>
-<tr>
-<td>Weekly Slack digest</td>
-<td>12</td>
-<td>1</td>
-<td>50%</td>
-<td>1</td>
-<td>6</td>
-<td>v2</td>
-</tr>
-<tr>
-<td>Live Play Store connector</td>
-<td>20</td>
-<td>1</td>
-<td>60%</td>
-<td>3</td>
-<td>4</td>
-<td>v2</td>
+<td>App bugs and login</td>
+<td>1.3%</td>
+<td>Yes</td>
+<td>Needs engineering logs</td>
+<td>Hand to engineering</td>
 </tr>
 </tbody></table></div>
-<h2>9. Success metrics</h2>
 <ul>
-<li><strong>North Star.</strong> Roadmap items per active team per month that carry linked review evidence.</li>
-<li><strong>Activation.</strong> Share of new users who load their own CSV and open Prioritize in the first session.</li>
-<li><strong>Time to first decision.</strong> Minutes from loading data to the first roadmap item. Target under 10 minutes <span class="tag a">Assumption</span>.</li>
-<li><strong>Trust.</strong> Audited tag precision of at least 85% on the top five topics, with at least 30 judgments each.</li>
-<li><strong>Retention.</strong> Share of teams that come back weekly for four weeks.</li>
-<li><strong>Guardrail.</strong> Share of ranked items a PM marks as obviously wrong stays under 10%.</li>
+<li><strong>Why not customer support?</strong> Zomato&#39;s unhappy users raise it just as often, so fixing it would not differentiate Swiggy. It is also downstream of other problems. 37% of Swiggy&#39;s cancellation complaints also mention support.</li>
+<li><strong>Why charges, not refunds?</strong> Missing refunds are a shared industry problem. Charges are where Swiggy is distinctively worse, and they are a policy lever, not a logistics overhaul.</li>
 </ul>
-<h2>10. Experiment plan</h2>
-<p>None of these has been run yet. Each is small enough for one person to run with peers.</p>
-<ol>
-<li><strong>Does the adjusted benchmark change decisions?</strong> Give 10 to 20 PM peers the same Swiggy and Zomato data. Half see raw rates and half see the unhappy-review view. Primary metric is agreement with a reference list of real gaps. Hypothesis: the adjusted group names fewer and more defensible gaps.</li>
-<li><strong>Default weights.</strong> Test a reach-heavy default against a severity-heavy one. Metric is how often users change the weights before adding to the roadmap. Fewer changes means a better default.</li>
-<li><strong>Answer-first summary versus charts only.</strong> Metric is click-through from Overview to Prioritize. Guardrail is that audited precision does not drop, because moving faster is worse if it means trusting bad tags.</li>
-</ol>
-<h2>11. Launch strategy</h2>
+<h2>4. Product recommendation</h2>
+<p><strong>Let users cancel free of charge for a short window right after placing an order, and show the exact charge and refund on the cancel screen once that window closes.</strong> I would start with about 60 seconds <span class="tag a">Assumption</span>, long enough to catch a wrong address or a double tap, and short enough that most kitchens have not started cooking.</p>
+<h3>User journey</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Today, as reviews describe it</th>
+<th>Proposed</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1. Spots a mistake right after ordering</td>
+<td>Tries to cancel within moments</td>
+<td>Cancels inside the free window</td>
+</tr>
+<tr>
+<td>2. Cancel screen</td>
+<td>Charged even for an immediate cancellation</td>
+<td>&quot;Cancel free for the next 42 seconds&quot;</td>
+</tr>
+<tr>
+<td>3. After the window</td>
+<td>A third of charge complaints say most or all of the order value was kept</td>
+<td>Exact charge and refund shown before confirming</td>
+</tr>
+<tr>
+<td>4. Afterwards</td>
+<td>Contacts support or leaves a 1-star review</td>
+<td>Fewer complaints <span class="tag a">Assumption</span></td>
+</tr>
+</tbody></table></div>
+<h3>Options and trade-offs</h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Option</th>
+<th>For</th>
+<th>Against</th>
+<th>Decision</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Free window plus a visible charge</strong></td>
+<td>Widest Swiggy-to-Zomato ratio (0.77 vs 0.14). Users ask for it. Little food is wasted in the first minute.</td>
+<td>Covers only about a fifth of charge complaints. Some users may order carelessly.</td>
+<td><strong>Recommend</strong></td>
+</tr>
+<tr>
+<td>Waive the charge on late orders</td>
+<td>Similar share of complaints (0.84 vs 0.37)</td>
+<td>Loses fee revenue on every late order, and the food is usually cooked</td>
+<td>Test next</td>
+</tr>
+<tr>
+<td>Overhaul customer support</td>
+<td>Top of the priority score</td>
+<td>No competitive gap, slow and expensive</td>
+<td>Guardrail only</td>
+</tr>
+<tr>
+<td>Faster refunds</td>
+<td>A real pain</td>
+<td>No Swiggy-specific gap</td>
+<td>Later</td>
+</tr>
+</tbody></table></div>
+<p>The core tension is <strong>fee revenue and restaurant cost against user trust</strong>. The window keeps both costs small by ending before most cooking starts. It is also possible that <strong>clarity alone</strong> solves most of it, if users object to <em>surprise</em> charges rather than charges themselves. The experiment tests that separately.</p>
+<h2>5. Success metrics and experiment</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Metric</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Primary</strong></td>
+<td>Complaints about cancellation charges per 1,000 cancelled orders, within 7 days (needs Swiggy&#39;s support data)</td>
+</tr>
+<tr>
+<td><strong>Public proxy</strong></td>
+<td>Cancellation-charge mentions per 100 unhappy Play Store reviews, now 3.5 against Zomato&#39;s 1.0. Target below 2.5 within eight weeks of rollout <span class="tag a">Assumption</span>. Trackable in ReviewRadar with a custom topic.</td>
+</tr>
+<tr>
+<td><strong>Guardrails</strong></td>
+<td>Orders cancelled in the first minute, restaurant food cost from cancellations, net revenue per order, repeat cancellers</td>
+</tr>
+<tr>
+<td><strong>Secondary</strong></td>
+<td>30-day reorder rate among users who cancelled</td>
+</tr>
+</tbody></table></div>
+<p><strong>Planned experiment (not run).</strong></p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Design</strong></td>
+<td>Three-arm A/B test, randomised by user so a returning customer always sees the same policy</td>
+</tr>
+<tr>
+<td><strong>Arms</strong></td>
+<td>Control is today&#39;s flow. Arm A shows the exact charge and refund before confirming. Arm B is Arm A plus a 60-second free window.</td>
+</tr>
+<tr>
+<td><strong>What it answers</strong></td>
+<td>A vs control tests whether clarity alone helps. B vs A tests what the free window adds, and what it costs.</td>
+</tr>
+<tr>
+<td><strong>Size and duration</strong></td>
+<td>About 12,500 cancelled orders per arm, <em>if</em> 2% of cancelled orders lead to a charge complaint and the goal is detecting a fall to 1.5% at 80% power <span class="tag a">Assumption</span>. At least four weeks.</td>
+</tr>
+<tr>
+<td><strong>Decision rule</strong></td>
+<td>Ship the cheapest arm that cuts the primary metric by at least 20% with all guardrails inside limits agreed beforehand with finance and restaurant operations</td>
+</tr>
+<tr>
+<td><strong>What would change my mind</strong></td>
+<td>A rise in careless or abusive first-minute cancellations, or complaints simply moving from charges to refund timing</td>
+</tr>
+</tbody></table></div>
+<h2>6. Limitations and learnings</h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Known from the data</th>
+<th>Assumed</th>
+<th>Still needs validation</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Swiggy&#39;s cancellation gap is large, stable and holds on every check I ran</td>
+<td>That charge complaints reflect a policy users find unfair or surprising</td>
+<td>Swiggy&#39;s real cancellation policy, volumes and costs, which are not public</td>
+</tr>
+<tr>
+<td>Charge complaints are about three and a half times as common on Swiggy</td>
+<td>That 60 seconds is short enough to avoid food waste</td>
+<td>How accurate the keyword tags are. No human tag audit has been run yet.</td>
+</tr>
+<tr>
+<td>Users cite mistaken and late orders as charge triggers</td>
+<td>That fewer surprises mean fewer complaints and better retention</td>
+<td>What causes the other two thirds of the gap</td>
+</tr>
+</tbody></table></div>
+<p>Reviews are self-selected, so they show direction, not population rates. The text patterns behind Insight 3 are rough pointers, not exact sizes. The data is a third-party scrape that I could not re-collect.</p>
+<p><strong>What I learned by getting things wrong.</strong></p>
 <ul>
-<li><strong>Proof first.</strong> Publish a short teardown, &quot;What 228,274 Swiggy and Zomato reviews say, and why raw benchmarks mislead&quot;, with the method and data caveats shown.</li>
-<li><strong>Beta.</strong> Invite 10 to 20 PMs and APMs from product communities and college PM clubs, free.</li>
-<li><strong>Launch gate.</strong> At least 60% of beta users add an evidence-linked item in week 1, and at least 40% return in week 2 <span class="tag a">Assumption</span>.</li>
-<li><strong>Pricing hypothesis.</strong> Free for one app, paid for competitor tracking and digests, priced below Appbot&#39;s mid tier. To be tested with willingness-to-pay questions, not assumed.</li>
+<li><strong>Raw comparisons mislead.</strong> I first presented raw gaps as findings. Controlling for rating mix and for testing 16 topics removed most of them.</li>
+<li><strong>Releases get blamed for trends.</strong> My first release check found four &quot;clear&quot; regressions. Comparing versions within the same weeks, none held. One Zomato spike fell from z = 9.1 to z = 1.6.</li>
+<li><strong>Missing data can fake a story.</strong> The feed gap made Swiggy&#39;s rating look up 0.10 on the previous period when it had slipped 0.03. Every comparison now skips those weeks.</li>
 </ul>
-<h2>12. Limits</h2>
-<ul>
-<li><strong>Keyword tags miss paraphrase and sarcasm.</strong> I have not run a full human audit yet. The tool makes one take about 20 minutes, and until someone does it the app shows no precision figure.</li>
-<li><strong>Most reviews are too short to tag.</strong> Two thirds are three words or fewer, so topic shares describe the reviewers who wrote something, not every reviewer.</li>
-<li><strong>Release attribution is approximate.</strong> Reviews of a version include people who updated late.</li>
-<li><strong>Public reviews are self-selected.</strong> Read them for direction, not as population estimates. Written-review ratings sit below the public store rating.</li>
-<li><strong>I do not own the data.</strong> It is a third-party scrape with a reported feed gap, and I could not re-collect it.</li>
-<li><strong>The rider-apps dataset is simulated.</strong> It exists to show the rider-side scenario that led to my second project, Kamai.</li>
-</ul>
-<h2>13. What I got wrong along the way</h2>
-<ul>
-<li><strong>Spike alerts.</strong> My first version, built on simulated data, counted mentions. On real data, changing review volume produced false alerts, so I switched to share of reviews.</li>
-<li><strong>The competitor view.</strong> I first presented raw gaps as findings, then noticed the one-star mix. The adjusted view reversed the customer-support conclusion in 2023 and turned it into &quot;no clear gap&quot; in 2026.</li>
-<li><strong>Keyword matching.</strong> Keywords first matched any word that <em>started</em> with them, so &quot;late&quot; matched &quot;latest&quot; and a fees complaint showed up as late-delivery evidence. Keywords now match whole words plus common endings, with <code>*</code> for deliberate prefixes. That bug is why the tag audit exists.</li>
-<li><strong>The data gap.</strong> On first load of the 2026 data, Swiggy&#39;s rating chart showed a sudden crash in late April. It turned out to be missing positive reviews, documented upstream. I now shade those weeks and exclude them from baselines rather than let the tool report a crisis that did not happen.</li>
-<li><strong>Hinglish.</strong> I assumed it would be the differentiator. The data did not support that, so I demoted it.</li>
-</ul>
-<h2>14. Next steps</h2>
-<ol>
-<li>Run the tag audit on 30 reviews per top topic and publish the precision table.</li>
-<li>Run experiment 1 with 10 peers and report the result, whatever it is.</li>
-<li>Add LLM-suggested topics for long untagged reviews, with the keyword taxonomy kept as the auditable base.</li>
-</ol>
-<h2>Sources</h2>
-<ul>
-<li>Productboard and Product Collective, 2020 Product Excellence Report (PDF): <a href="https://www.productboard.com/wp-content/uploads/2020/10/stateofproductexcellence.pdf" target="_blank" rel="noopener">https://www.productboard.com/wp-content/uploads/2020/10/stateofproductexcellence.pdf</a></li>
-<li>Productboard and Product Collective, 2021 Product Excellence Report (PDF): <a href="https://info.productboard.com/rs/128-JHR-871/images/PE%20Survey%202021.pdf" target="_blank" rel="noopener">https://info.productboard.com/rs/128-JHR-871/images/PE%20Survey%202021.pdf</a></li>
-<li>MarTech Series on Pendo&#39;s State of Product Leadership, 13 Feb 2019: <a href="https://martechseries.com/sales-marketing/pendo-releases-2nd-annual-state-product-leadership-survey-revealing-significant-shifts-traditional-product-management-roles-focus/" target="_blank" rel="noopener">https://martechseries.com/sales-marketing/pendo-releases-2nd-annual-state-product-leadership-survey-revealing-significant-shifts-traditional-product-management-roles-focus/</a></li>
-<li>Mind the Product, &quot;Why you should ignore your loudest customers&quot;, 4 Feb 2025: <a href="https://www.mindtheproduct.com/why-you-should-ignore-your-loudest-customers/" target="_blank" rel="noopener">https://www.mindtheproduct.com/why-you-should-ignore-your-loudest-customers/</a></li>
-<li>Launch HN: Thematic, Aug 2017: <a href="https://news.ycombinator.com/item?id=15020712" target="_blank" rel="noopener">https://news.ycombinator.com/item?id=15020712</a></li>
-<li>Pagano and Maalej, RE 2013: <a href="https://ase.in.tum.de/lehrstuhl_1/images/people/pagano/RE2013PaganoMaalej.pdf" target="_blank" rel="noopener">https://ase.in.tum.de/lehrstuhl_1/images/people/pagano/RE2013PaganoMaalej.pdf</a></li>
-<li>Chen et al., AR-Miner, ICSE 2014: <a href="https://ink.library.smu.edu.sg/sis_research/2323" target="_blank" rel="noopener">https://ink.library.smu.edu.sg/sis_research/2323</a></li>
-<li>Maalej et al., Requirements Engineering 2016 (annotated copy): <a href="https://cs.uwaterloo.ca/~dberry/ATRE/Slides/HairyToolsTalk/DanCommentedMaalejEtAl.pdf" target="_blank" rel="noopener">https://cs.uwaterloo.ca/~dberry/ATRE/Slides/HairyToolsTalk/DanCommentedMaalejEtAl.pdf</a></li>
-<li>McIlroy et al., CACM, Nov 2017: <a href="https://sail.cs.queensu.ca/data/pdfs/2017_UserReviewsOfTopMobileAppsInAppleAndGoogleAppStores.pdf" target="_blank" rel="noopener">https://sail.cs.queensu.ca/data/pdfs/2017_UserReviewsOfTopMobileAppsInAppleAndGoogleAppStores.pdf</a></li>
-<li>Patwa et al., SemEval-2020 Task 9: <a href="https://arxiv.org/abs/2008.04277" target="_blank" rel="noopener">https://arxiv.org/abs/2008.04277</a></li>
-<li>Appbot plans: <a href="https://appbot.co/plans/" target="_blank" rel="noopener">https://appbot.co/plans/</a> · Unwrap pricing: <a href="https://www.unwrap.ai/pricing" target="_blank" rel="noopener">https://www.unwrap.ai/pricing</a> · Productboard pricing: <a href="https://www.productboard.com/pricing/" target="_blank" rel="noopener">https://www.productboard.com/pricing/</a> · Canny pricing: <a href="https://canny.io/pricing" target="_blank" rel="noopener">https://canny.io/pricing</a> · SentiSum pricing: <a href="https://www.sentisum.com/pricing" target="_blank" rel="noopener">https://www.sentisum.com/pricing</a> · Thematic on Capterra: <a href="https://www.capterra.co.uk/software/159338/thematic" target="_blank" rel="noopener">https://www.capterra.co.uk/software/159338/thematic</a> · Enterpret pricing: <a href="https://www.enterpret.com/pricing" target="_blank" rel="noopener">https://www.enterpret.com/pricing</a></li>
-<li>Productboard Pulse launch (CIO Dive press release), 29 Oct 2024: <a href="https://www.ciodive.com/press-release/20241028-productboard-launches-ai-powered-productboard-pulse-to-integrate-voice-of-c-1/" target="_blank" rel="noopener">https://www.ciodive.com/press-release/20241028-productboard-launches-ai-powered-productboard-pulse-to-integrate-voice-of-c-1/</a></li>
-<li>TechCrunch, Sensor Tower acquires data.ai, 18 Mar 2024: <a href="https://techcrunch.com/2024/03/18/app-analytics-firm-sensor-tower-acquires-rival-data-ai/" target="_blank" rel="noopener">https://techcrunch.com/2024/03/18/app-analytics-firm-sensor-tower-acquires-rival-data-ai/</a></li>
-<li>Business Wire, Amplitude acquires Kraftful, 10 Jul 2025: <a href="https://www.businesswire.com/news/home/20250710876791/en/Amplitude-Acquires-Kraftful-to-Accelerate-AI-Strategy" target="_blank" rel="noopener">https://www.businesswire.com/news/home/20250710876791/en/Amplitude-Acquires-Kraftful-to-Accelerate-AI-Strategy</a></li>
-<li>2026 dataset and its method notes: <a href="https://github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews" target="_blank" rel="noopener">https://github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews</a> (see <code>DATA_SOURCES.md</code>)</li>
-<li>2023 dataset: <a href="https://github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence" target="_blank" rel="noopener">https://github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence</a> (from Kaggle <code>saloni1712/zomato-and-swiggy-play-store-reviews</code>)</li>
-</ul>
-<p>Full research notes, with every figure&#39;s sample size and method, are in <code>research/reviewradar_secondary_research.md</code>.</p>
+<p><strong>Next steps.</strong> Hand-label 100 Swiggy cancellation complaints to explain the rest of the gap, run the in-app tag audit on the top topics, and test with 10 PM peers whether the fair comparison changes which gaps they would act on.</p>
+<h2>Appendix: about the tool</h2>
+<p>ReviewRadar runs entirely in the browser, and imported reviews never leave the PM&#39;s machine. Its views cover an answer-first overview, a feedback explorer, trends with release checks, the competitor benchmark, prioritisation, an evidence-linked roadmap and a tag audit. Every ranked item links back to the reviews behind it. Basic review tagging is already cheap (Appbot starts at $49 a month <span class="tag v">Verified</span>, Oct 2026), so ReviewRadar&#39;s angle is narrower: fair benchmarks, release checks that do not confuse trends with regressions, and a priority score a PM can defend. It is not built for small apps, since 88% of Google Play apps get 20 or fewer reviews a day (McIlroy et al., 2017 <span class="tag v">Verified</span>).</p>
+<p><strong>Sources.</strong> Dataset: <a href="https://github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews" target="_blank" rel="noopener">ba-capstone-app-reviews</a>, commit 019dae4, with its method in <code>DATA_SOURCES.md</code>. The 2023 comparison data is a <a href="https://github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence" target="_blank" rel="noopener">public compilation</a> of a Kaggle scrape. Full citations, the competitor landscape, academic research and a verification log for every figure are in <code>research/reviewradar_secondary_research.md</code>.</p>
 
 <!--CASE:END--></article>
     </section>
@@ -1084,7 +916,8 @@ pd.DataFrame(rows).to_csv("myapp.csv", index=False)</pre>
 /* ---------- utilities ---------- */
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fmt=(n,d=0)=>Number(n).toLocaleString("en-IN",{minimumFractionDigits:d,maximumFractionDigits:d});
+// international digit grouping (228,274) so the app matches the README and case study, dates stay en-IN
+const fmt=(n,d=0)=>Number(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
 const pct=(n,d=0)=>fmt(n*100,d)+"%";
 const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
@@ -1108,7 +941,7 @@ Support quality | complaint | support, helpline, ticket, chat, call center, no r
 Earnings breakdown | request | breakdown, statement, trip-wise, hisab, detail of earning, per km detail
 Fuel allowance | request | fuel, petrol, charging, ev allowance
 Insurance & safety | request | insurance, accident, safety, medical`,
-real:`Late delivery | complaint | late, delay, took long, taking long, too long, hour, hrs, waiting, wait for, not on time, on time, never delivered, not delivered, still not, der se, time pe nahi
+real:`Late delivery | complaint | late, delay, took long, taking long, too long, hour, hrs, waiting, wait for, not on time, never delivered, not delivered, still not, der se, time pe nahi
 Cancellations & refunds | complaint | refund, cancel, money back, cancellation, paisa wapas
 Customer support | complaint | customer care, customer support, customer service, support, chat, executive, helpline, ticket, no response, not responding, customer interaction, agent
 Missing or wrong items | complaint | missing, wrong item, wrong order, wrong food, wrong dish, incomplete, not received, spill, leak, damaged, half order
@@ -1211,7 +1044,12 @@ const ui={ds:"real",app:null,period:4,q:"",fr:"",fs:"",sort:"new",ftopics:new Se
 let ROADMAP=[];
 const saveRM=()=>store("rr_roadmap_"+ui.ds,ROADMAP);
 const taxKey=()=>ui.ds==="sim"?"sim":ui.ds.startsWith("real")?"real":"import";
-function weekLabel(i,y){const d=new Date(DATA.weekStart.getTime()+i*7*864e5);return d.toLocaleDateString("en-IN",y?{day:"numeric",month:"short",year:"numeric"}:{day:"numeric",month:"short"})}
+// calendar arithmetic (not milliseconds) so a daylight-saving change cannot shift a label by a day
+const addDays=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const dayLabel=(d,y)=>d.toLocaleDateString("en-IN",y?{day:"numeric",month:"short",year:"numeric"}:{day:"numeric",month:"short"});
+function weekLabel(i,y){return dayLabel(addDays(DATA.weekStart,i*7),y)}
+// the Sunday that closes week i, so a window reads "29 Jun – 20 Sept", not the Monday the last week starts on
+function weekEndLabel(i,y){return dayLabel(addDays(DATA.weekStart,i*7+6),y)}
 const verMM=v=>{const m=String(v||"").match(/^(\d+)\.(\d+)/);return m?m[1]+"."+m[2]:""};
 const cmpVer=(a,b)=>{const A=a.split(".").map(Number),B=b.split(".").map(Number);return (A[0]-B[0])||(A[1]-B[1])};
 
@@ -1258,6 +1096,10 @@ async function switchDataset(ds){
   tagAll();fillAppSel();renderAll();
 }
 const inWin=(rv,p=ui.period,offset=0)=>rv.week>=DATA.weeks-p-offset&&rv.week<DATA.weeks-offset;
+// same window minus the weeks inside a reported feed gap. Used for every metric that compares windows or apps,
+// because the gap removed mostly positive reviews and would make ratings and complaint rates look worse than they were
+const inWinX=(rv,p=ui.period,offset=0)=>inWin(rv,p,offset)&&!(DATA.gapWeeks||[]).includes(rv.week);
+const gapInRange=(lo,hi)=>(DATA.gapWeeks||[]).some(w=>w>=lo&&w<hi);
 const appRows=a=>DATA.byApp[a]||[];
 const mine=()=>appRows(ui.app);
 const topicName=id=>(TAX.find(t=>t.id===id)||{name:id}).name;
@@ -1275,7 +1117,7 @@ function spikes(app){
   }).sort((x,y)=>y.z-x.z);
 }
 function topicStats(app,p=ui.period,band="all"){
-  let rs=appRows(app).filter(r=>inWin(r,p));if(band==="neg")rs=rs.filter(r=>r.rating<=2);
+  let rs=appRows(app).filter(r=>inWinX(r,p));if(band==="neg")rs=rs.filter(r=>r.rating<=2);
   const N=rs.length,W=rs.reduce((s,r)=>s+upw(r),0)||1;
   return TAX.map(tp=>{
     const hit=rs.filter(r=>r.topics.includes(tp.id));
@@ -1296,9 +1138,13 @@ function scoreTopics(){
   ui.gapBand=useNeg?"neg":"all";
   const reach=s=>ui.wup?s.wshare:s.share;
   const maxShare=Math.max(...mineS.map(reach),.0001);
+  // momentum compares the topic's share of reviews in each half of the window, not raw counts, so a fall in total
+  // review volume (Zomato's halved between April and September 2026) does not read as a falling complaint
+  const nRec=appRows(app).filter(r=>inWinX(r,W)&&r.week>=DATA.weeks-half).length,nEar=(mineS[0]?mineS[0].N:0)-nRec;
   return mineS.map((s,i)=>{
     const recentN=s.hit.filter(r=>r.week>=DATA.weeks-half).length,earlierN=s.n-recentN;
-    const mom=clamp((recentN-earlierN)/Math.max(earlierN,1),-1,3);
+    const shR=nRec?recentN/nRec:0,shE=nEar?earlierN/nEar:0;
+    const mom=nRec&&nEar?clamp((shR-shE)/Math.max(shE,1/nEar),-1,3):0;
     const k0=othBase.reduce((t,o)=>t+o[i].n,0),n0=othBase.reduce((t,o)=>t+o[i].N,0);
     const compShare=n0?k0/n0:gapBase[i].share,myShare=gapBase[i].share;
     const gap=myShare-compShare;
@@ -1315,20 +1161,33 @@ function versionShifts(app){
   const gw=new Set(DATA.gapWeeks||[]);
   appRows(app).forEach(r=>{if(!r.version||gw.has(r.week))return;const g=by[r.version]||(by[r.version]={v:r.version,rows:[],first:r.date});g.rows.push(r);if(r.date<g.first)g.first=r.date});
   const vs=Object.values(by).filter(x=>x.rows.length>=40).sort((a,b)=>cmpVer(a.v,b.v));
+  vs.forEach(x=>{x.wk=new Map();x.rows.forEach(r=>{if(!x.wk.has(r.week))x.wk.set(r.week,[]);x.wk.get(r.week).push(r)})});
   return vs.map((x,i)=>{
-    const prev=vs.slice(Math.max(0,i-3),i),n=x.rows.length,pn=prev.reduce((s,p)=>s+p.rows.length,0);
+    // compare with the three previous versions inside the same weeks only (Cochran-Mantel-Haenszel, one stratum per
+    // week). A plain before-and-after test blamed releases for slow drifts in mood: Zomato's v19.6 support "rise"
+    // was z = 9.1 before and z = 1.6 once both groups were read in the same weeks
+    const prev=vs.slice(Math.max(0,i-3),i);
+    const strata=[...x.wk].map(([w,a])=>[a,prev.flatMap(p=>p.wk.get(w)||[])]).filter(([,b])=>b.length);
+    const n=strata.reduce((s,[a])=>s+a.length,0),pn=strata.reduce((s,[,b])=>s+b.length,0);
     const topics=TAX.map(tp=>{
-      const k=x.rows.filter(r=>r.topics.includes(tp.id)).length;
-      const pk=prev.reduce((s,p)=>s+p.rows.filter(r=>r.topics.includes(tp.id)).length,0);
-      const p1=k/n,p0=pn?pk/pn:null;let z=0;
-      if(pn){const pp=(k+pk)/(n+pn),se=Math.sqrt(pp*(1-pp)*(1/n+1/pn));z=se?(p1-p0)/se:0}
-      return {tp,k,p1,p0,z};
+      let k=0,pk=0,e=0,v=0;
+      strata.forEach(([a,b])=>{const ka=a.filter(r=>r.topics.includes(tp.id)).length,kb=b.filter(r=>r.topics.includes(tp.id)).length,N=a.length+b.length,m=ka+kb;
+        k+=ka;pk+=kb;e+=a.length*m/N;if(N>1)v+=a.length*b.length*m*(N-m)/(N*N*(N-1))});
+      return {tp,k,p1:n?k/n:0,p0:pn?pk/pn:null,z:v?(k-e)/Math.sqrt(v):0};
     });
-    return {v:x.v,n,first:x.first,avg:mean(x.rows.map(r=>r.rating)),hasPrev:pn>0,topics,
-      jump:topics.filter(t=>t.z>=2&&t.k>=5).sort((a,b)=>b.z-a.z)[0]||null,
-      drop:topics.filter(t=>t.z<=-2).sort((a,b)=>a.z-b.z)[0]||null};
+    return {v:x.v,n:x.rows.length,first:x.first,avg:mean(x.rows.map(r=>r.rating)),hasPrev:pn>0,noOverlap:prev.length>0&&!pn,topics,
+      jump:topics.filter(t=>t.z>=REL_Z&&t.k>=5).sort((a,b)=>b.z-a.z)[0]||null,
+      drop:topics.filter(t=>t.z<=-REL_Z).sort((a,b)=>a.z-b.z)[0]||null};
   });
 }
+// |z| >= 3 is two-sided p of about 0.0027, so across a 16-topic taxonomy the chance of any false alarm per release is
+// about 4%. At the old |z| >= 2, Swiggy's 26 versions produced 12 rises where chance alone predicts about 9
+const REL_Z=3;
+// standard normal CDF (Abramowitz and Stegun 7.1.26, error below 1e-6) and its inverse by bisection
+const ncdf=x=>{const t=1/(1+.3275911*Math.abs(x)/Math.SQRT2),y=1-((((1.061405429*t-1.453152027)*t+1.421413741)*t-.284496736)*t+.254829592)*t*Math.exp(-x*x/2);return x>=0?(1+y)/2:(1-y)/2};
+const zCrit=p=>{let lo=0,hi=10;for(let i=0;i<60;i++){const m=(lo+hi)/2;if(1-ncdf(m)>p)lo=m;else hi=m}return lo};
+// two-sided Bonferroni threshold for testing every topic at once (2.96 for 16 topics)
+const zAdj=()=>zCrit(.025/Math.max(TAX.length,1));
 function wilson(k,n){if(!n)return [0,0];const z=1.96,p=k/n,d=1+z*z/n,c=(p+z*z/(2*n))/d,h=z*Math.sqrt(p*(1-p)/n+z*z/(4*n*n))/d;return [Math.max(0,c-h),Math.min(1,c+h)]}
 
 /* ---------- charts ---------- */
@@ -1350,8 +1209,8 @@ function renderAll(){
   $("#ovTitle").textContent=src==="sim"?"What riders are telling you":"What customers are telling you";
   $("#srcNote").innerHTML=src==="real"
     ?(ui.ds==="real"
-      ?`<span class="tag v">Real data</span><span><b>${fmt(DATA.reviews.length)} public Google Play reviews</b> of Swiggy and Zomato written between ${weekLabel(0,1)} and ${new Date(DATA.weekStart.getTime()+(DATA.weeks*7-1)*864e5).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})}. Collected by a public GitHub project with google-play-scraper (English reviews from India, newest first). Reviews are self-selected. Two thirds are three words or fewer, and the shaded weeks are a feed gap the collectors reported, when positive reviews went missing.</span>`
-      :`<span class="tag v">Real data</span><span><b>${fmt(DATA.reviews.length)} public Google Play reviews</b> of Swiggy and Zomato, weeks of ${weekLabel(0,1)} to ${weekLabel(DATA.weeks-1,1)}. Source is a public GitHub copy of a Kaggle scrape whose method is undocumented. Swiggy's file is far more one-star heavy than Zomato's, so use the 1 to 2 star comparison in Competitors.</span>`)
+      ?`<span class="tag v">Real data</span><span><b>${fmt(DATA.reviews.length)} public Google Play reviews</b> of Swiggy and Zomato written between ${weekLabel(0,1)} and ${weekEndLabel(DATA.weeks-1,1)}. Collected by a public GitHub project with google-play-scraper (English reviews from India, newest first). ${M.raw_rows>M.rows&&M.partial_week?`The source file holds ${fmt(M.raw_rows)} reviews. The ${fmt(M.raw_rows-M.rows)} from the partial week of ${esc(M.partial_week)} are left out so every week runs Monday to Sunday. `:""}Reviews are self-selected. Two thirds are three words or fewer, and the shaded weeks are a feed gap the collectors reported, when positive reviews went missing.</span>`
+      :`<span class="tag v">Real data</span><span><b>${fmt(DATA.reviews.length)} public Google Play reviews</b> of Swiggy and Zomato written between ${weekLabel(0,1)} and ${weekEndLabel(DATA.weeks-1,1)}. Source is a public GitHub copy of a Kaggle scrape whose method is undocumented. Swiggy's file is far more one-star heavy than Zomato's, so use the 1 to 2 star comparison in Competitors.</span>`)
     :src==="sim"?`<span class="tag s">Simulated</span><span><b>Simulated data.</b> Three fictional delivery-partner apps generated from hand-written English and Hinglish templates with a seeded random generator. It shows the rider-side scenario behind Kamai. No real users or reviews.</span>`
     :`<span class="tag r">Your data</span><span><b>Your imported reviews.</b> Processed in this browser only.</span>`;
   const pa=$("#periodAll");pa.value=String(DATA.weeks);pa.textContent=`All ${DATA.weeks} weeks`;pa.disabled=false;
@@ -1366,9 +1225,11 @@ function renderAnswers(){
   $("#trAnswer").innerHTML=sp?`<span class="k">Rising now</span><span><b>${esc(sp.tp.name)}</b> is at ${pct(sp.recent,1)} of reviews over the last two weeks, ${fmt(sp.ratio,1)}× its baseline.</span>`:`<span class="k">Steady</span><span>No topic for ${esc(ui.app)} is above its normal range in the last two weeks. The complaints below are long-running rather than new.</span>`;
   if(DATA.apps.length>1){
     const st=Object.fromEntries(DATA.apps.map(a=>[a,topicStats(a,ui.period,ui.cband)])),oth=DATA.apps.filter(a=>a!==ui.app);
-    const g=TAX.map((tp,i)=>{const y=st[ui.app][i],k0=oth.reduce((s,a)=>s+st[a][i].n,0),n0=oth.reduce((s,a)=>s+st[a][i].N,0),o=n0?k0/n0:0,se=Math.sqrt(y.share*(1-y.share)/(y.N||1)+o*(1-o)/(n0||1));return {tp,gap:y.share-o,sig:Math.abs(y.share-o)>1.96*se,you:y.share,o}}).filter(x=>x.sig).sort((a,b)=>b.gap-a.gap);
+    // the headline only uses gaps that survive the correction for testing every topic at once
+    const za=zAdj();
+    const g=TAX.map((tp,i)=>{const y=st[ui.app][i],k0=oth.reduce((s,a)=>s+st[a][i].n,0),n0=oth.reduce((s,a)=>s+st[a][i].N,0),o=n0?k0/n0:0,se=Math.sqrt(y.share*(1-y.share)/(y.N||1)+o*(1-o)/(n0||1));return {tp,gap:y.share-o,sig:se>0&&Math.abs(y.share-o)>za*se,you:y.share,o}}).filter(x=>x.sig).sort((a,b)=>b.gap-a.gap);
     const w=g[0],bst=g[g.length-1];
-    $("#cpAnswer").innerHTML=w&&w.gap>0?`<span class="k">Biggest gap</span><span>${esc(ui.app)} gets more <b>${esc(w.tp.name)}</b> mentions than ${esc(oth.join(", "))}, ${fmt(w.you*100,1)} vs ${fmt(w.o*100,1)} per 100 ${ui.cband==="neg"?"unhappy ":""}reviews.${bst&&bst.gap<0?` It does better on <b>${esc(bst.tp.name)}</b> (${fmt(bst.you*100,1)} vs ${fmt(bst.o*100,1)}).`:""}</span>`:`<span class="k">No clear gap</span><span>No topic differs from competitors by more than its confidence interval in this window.</span>`;
+    $("#cpAnswer").innerHTML=w&&w.gap>0?`<span class="k">Biggest gap</span><span>${esc(ui.app)} gets more <b>${esc(w.tp.name)}</b> mentions than ${esc(oth.join(", "))}, ${fmt(w.you*100,1)} vs ${fmt(w.o*100,1)} per 100 ${ui.cband==="neg"?"unhappy ":""}reviews.${bst&&bst.gap<0?` It does better on <b>${esc(bst.tp.name)}</b> (${fmt(bst.you*100,1)} vs ${fmt(bst.o*100,1)}).`:""}</span>`:`<span class="k">No clear gap</span><span>No topic differs from competitors by enough to survive a correction for testing every topic in this window.</span>`;
   }else $("#cpAnswer").innerHTML="";
   $("#prAnswer").innerHTML=top?`<span class="k">Top three</span><span>${sc.slice(0,3).map((s,i)=>`<b>${i+1}. ${esc(s.tp.name)}</b> <span class="num muted">${fmt(s.score,1)}</span>`).join(" &nbsp;·&nbsp; ")}</span>`:"";
 }
@@ -1379,13 +1240,19 @@ function deltaHTML(cur,prev,higherIsBad,isPct){
   return `<span class="delta ${cls}">${d>0?"▲":d<0?"▼":"■"} ${val} vs previous</span>`;
 }
 function renderOverview(){
-  const P=ui.period,rs=mine(),cur=rs.filter(r=>inWin(r)),prevOk=DATA.weeks>=2*P,prev=prevOk?rs.filter(r=>inWin(r,P,P)):[];
-  $("#ovSub").textContent=`${ui.app} · weeks of ${weekLabel(DATA.weeks-P)} – ${weekLabel(DATA.weeks-1,1)} · ${fmt(cur.length)} reviews in window`;
+  const P=ui.period,rs=mine(),cur=rs.filter(r=>inWinX(r)),prevOk=DATA.weeks>=2*P,prev=prevOk?rs.filter(r=>inWinX(r,P,P)):[];
+  const gapCur=gapInRange(DATA.weeks-P,DATA.weeks),gapPrev=prevOk&&gapInRange(DATA.weeks-2*P,DATA.weeks-P);
+  const gapNote=gapCur?" · feed-gap weeks left out":gapPrev?" · feed-gap weeks left out of the comparison":"";
+  // usable weeks in each window, so volume is compared per week when the gap shortens one of them
+  const usable=(lo,hi)=>hi-lo-(DATA.gapWeeks||[]).filter(w=>w>=lo&&w<hi).length;
+  const curW=usable(DATA.weeks-P,DATA.weeks),prevW=prevOk?usable(DATA.weeks-2*P,DATA.weeks-P):0;
+  $("#ovSub").textContent=`${ui.app} · ${weekLabel(DATA.weeks-P)} – ${weekEndLabel(DATA.weeks-1,1)} · ${fmt(cur.length)} reviews in window${gapNote}`;
   const avg=mean(cur.map(r=>r.rating)),pavg=prev.length?mean(prev.map(r=>r.rating)):null;
   const neg=cur.filter(r=>r.sent<-.2).length/(cur.length||1),pneg=prev.length?prev.filter(r=>r.sent<-.2).length/prev.length:null;
   const cov=cur.filter(r=>r.topics.length).length/(cur.length||1);
   const short=cur.filter(r=>r.words<=5).length/(cur.length||1);
-  const volD=prev.length?`<span class="delta muted">${cur.length>=prev.length?"▲":"▼"} ${fmt(Math.abs(cur.length-prev.length))} vs previous</span>`:deltaHTML(0,null);
+  const perWk=prev.length&&curW&&prevW?[cur.length/curW,prev.length/prevW]:null;
+  const volD=perWk?`<span class="delta muted">${perWk[0]>=perWk[1]?"▲":"▼"} ${fmt(Math.abs(perWk[0]-perWk[1]))} a week vs previous</span>`:deltaHTML(0,null);
   $("#kpis").innerHTML=[
     ["Reviews",fmt(cur.length),volD],
     ["Average rating",fmt(avg,2)+"★",deltaHTML(avg,pavg,false,false)],
@@ -1410,8 +1277,8 @@ function makeInsights(){
   if(sp&&sp.z>2&&sp.recentN>=4)out.push(`<b>${esc(sp.tp.name)}</b> is running at ${pct(sp.recent,1)} of reviews over the last two weeks, ${fmt(sp.ratio,1)}× its baseline of ${pct(sp.base,1)}.`);
   const vs=versionShifts(ui.app).filter(v=>v.hasPrev).slice(-3).filter(v=>v.jump).sort((a,b)=>b.jump.z-a.jump.z)[0];
   const recentV=versionShifts(ui.app).filter(v=>v.hasPrev).slice(-3);
-  if(!vs&&recentV.length)out.push(`Release check: none of the last ${recentV.length} versions (v${recentV.map(v=>esc(v.v)).join(", v")}) raised any topic's share significantly against the versions before it. Complaints here are chronic, not release regressions.`);
-  if(vs)out.push(`Release check: in <b>v${esc(vs.v)}</b> (first seen ${vs.first.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}), <b>${esc(vs.jump.tp.name)}</b> rose to ${pct(vs.jump.p1,1)} of reviews from ${pct(vs.jump.p0,1)} across the three previous versions (z = ${fmt(vs.jump.z,1)}). Check what that release changed.`);
+  if(!vs&&recentV.length)out.push(`Release check: none of the last ${recentV.length} versions (v${recentV.map(v=>esc(v.v)).join(", v")}) raised any topic's share clearly above the versions before it, read in the same weeks. Complaints here are chronic, not release regressions.`);
+  if(vs)out.push(`Release check: in <b>v${esc(vs.v)}</b> (first seen ${vs.first.toLocaleDateString("en-IN",{day:"numeric",month:"short"})}), <b>${esc(vs.jump.tp.name)}</b> reached ${pct(vs.jump.p1,1)} of reviews against ${pct(vs.jump.p0,1)} for the previous versions in the same weeks (z = ${fmt(vs.jump.z,1)}). Users who update early can differ from those who do not, so treat it as a lead and check what that release changed.`);
   const sc=scoreTopics();
   const behind=sc.filter(s=>s.gap>.01).sort((a,b)=>b.gap-a.gap)[0];
   if(behind&&DATA.apps.length>1)out.push(ui.gapBand==="neg"?`Among unhappy (1–2★) reviewers, you trail competitors most on <b>${esc(behind.tp.name)}</b>: ${fmt(behind.myShare*100,1)} mentions per 100 vs ${fmt(behind.compShare*100,1)}. Raw rates exaggerate gaps when rating mixes differ, so ReviewRadar compares like with like.`:`You trail competitors most on <b>${esc(behind.tp.name)}</b>: ${fmt(behind.myShare*100,1)} mentions per 100 reviews vs ${fmt(behind.compShare*100,1)} for the others.`);
@@ -1453,24 +1320,25 @@ function renderTrends(){
   $("#spikeTbl").innerHTML=`<thead><tr><th>Topic</th><th class="n">Baseline share</th><th class="n">Last 2 wks</th><th class="n">Mentions/wk</th><th class="n">z</th><th>Status</th></tr></thead><tbody>${spikes(ui.app).map(s=>`<tr><td>${esc(s.tp.name)}</td><td class="n">${pct(s.base,1)}</td><td class="n">${pct(s.recent,1)}</td><td class="n">${fmt(s.recentN,0)}</td><td class="n">${fmt(s.z,1)}</td><td>${s.z>4&&s.recentN>=4?'<span class="pill bad">Critical</span>':s.z>2&&s.recentN>=4?'<span class="pill warn">Rising</span>':'<span class="pill">Stable</span>'}</td></tr>`).join("")}</tbody>`;
   const vs=versionShifts(ui.app).slice(-8).reverse();
   const cell=t=>t?`<b>${esc(t.tp.name)}</b><br><span class="num muted">${pct(t.p0,1)} → ${pct(t.p1,1)} · z ${fmt(t.z,1)}</span>`:'<span class="muted">none</span>';
-  $("#verTbl").innerHTML=vs.length?`<thead><tr><th>Version</th><th>First seen</th><th class="n">Reviews</th><th class="n">Avg ★</th><th>Biggest rise</th><th>Biggest fall</th></tr></thead><tbody>${vs.map(v=>`<tr><td class="num">v${esc(v.v)}</td><td>${v.first.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"})}</td><td class="n">${fmt(v.n)}</td><td class="n">${fmt(v.avg,2)}</td><td>${v.hasPrev?cell(v.jump):'<span class="muted">first version in data</span>'}</td><td>${v.hasPrev?cell(v.drop):""}</td></tr>`).join("")}</tbody>`:'<tbody><tr><td class="muted">Version data not available for this app.</td></tr></tbody>';
+  $("#verTbl").innerHTML=vs.length?`<thead><tr><th>Version</th><th>First seen</th><th class="n">Reviews</th><th class="n">Avg ★</th><th>Biggest rise</th><th>Biggest fall</th></tr></thead><tbody>${vs.map(v=>`<tr><td class="num">v${esc(v.v)}</td><td>${v.first.toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"})}</td><td class="n">${fmt(v.n)}</td><td class="n">${fmt(v.avg,2)}</td><td>${v.hasPrev?cell(v.jump):`<span class="muted">${v.noOverlap?"no earlier version in the same weeks":"first version in data"}</span>`}</td><td>${v.hasPrev?cell(v.drop):""}</td></tr>`).join("")}</tbody>`:'<tbody><tr><td class="muted">Version data not available for this app.</td></tr></tbody>';
 }
 function renderCompetitors(){
   const apps=DATA.apps;
   $("#cbAll").setAttribute("aria-pressed",ui.cband==="all");$("#cbNeg").setAttribute("aria-pressed",ui.cband==="neg");
   if(apps.length<2){$("#compKpis").innerHTML='<div class="panel"><p class="empty">Import at least two apps to compare.</p></div>';$("#compTbl").innerHTML="";if(charts.cComp){charts.cComp.destroy();delete charts.cComp}return}
   const stats=Object.fromEntries(apps.map(a=>[a,topicStats(a,ui.period,ui.cband)]));
-  $("#compKpis").innerHTML=apps.slice(0,4).map(a=>{const rs=appRows(a).filter(r=>inWin(r));return `<div class="panel kpi"><span class="label">${esc(a)}${a===ui.app?" (you)":""}</span><span class="value num">${fmt(mean(rs.map(r=>r.rating)),2)}★</span><span class="delta muted">${fmt(rs.length)} reviews · ${pct(rs.filter(r=>r.rating===1).length/(rs.length||1))} one-star</span></div>`}).join("");
+  $("#compKpis").innerHTML=apps.slice(0,4).map(a=>{const rs=appRows(a).filter(r=>inWinX(r));return `<div class="panel kpi"><span class="label">${esc(a)}${a===ui.app?" (you)":""}</span><span class="value num">${fmt(mean(rs.map(r=>r.rating)),2)}★</span><span class="delta muted">${fmt(rs.length)} reviews · ${pct(rs.filter(r=>r.rating===1).length/(rs.length||1))} one-star</span></div>`}).join("");
   const col=SER(),order=[ui.app,...apps.filter(a=>a!==ui.app)];
   mk("cComp",{type:"bar",data:{labels:TAX.map(t=>t.name),datasets:order.map((a,i)=>({label:a,data:stats[a].map(s=>+(s.share*100).toFixed(1)),backgroundColor:i===0?css("--accent"):css("--comp"),borderRadius:3,maxBarThickness:22}))},options:baseOpts({layout:{padding:{left:36}},interaction:{mode:"index",intersect:false},plugins:{legend:{position:"top",align:"end"}},scales:{y:{beginAtZero:true,border:{display:false},title:{display:true,text:ui.cband==="neg"?"Mentions per 100 one- and two-star reviews":"Mentions per 100 reviews"}},x:{grid:{display:false},ticks:{maxRotation:50,minRotation:30}}}})});
-  const others=apps.filter(a=>a!==ui.app);
+  const others=apps.filter(a=>a!==ui.app),za=zAdj();
   const rows=TAX.map((tp,i)=>{
     const y=stats[ui.app][i],k0=others.reduce((s,a)=>s+stats[a][i].n,0),n0=others.reduce((s,a)=>s+stats[a][i].N,0);
     const you=y.share,oth=n0?k0/n0:0,gap=you-oth,se=Math.sqrt(you*(1-you)/(y.N||1)+oth*(1-oth)/(n0||1)),ci=1.96*se;
     const best=others.reduce((b,a)=>stats[a][i].share<stats[b][i].share?a:b,others[0]);
-    return {tp,you,oth,gap,ci,sig:Math.abs(gap)>ci,best,bestS:stats[best][i].share};
+    // sig: outside its own 95% interval. adj: still clear after a Bonferroni correction for testing every topic
+    return {tp,you,oth,gap,ci,sig:Math.abs(gap)>ci,adj:se>0&&Math.abs(gap)>za*se,best,bestS:stats[best][i].share};
   }).sort((a,b)=>b.gap-a.gap);
-  $("#compTbl").innerHTML=`<thead><tr><th>Topic</th><th class="n">You /100</th><th class="n">Others /100</th><th class="n">Gap ± 95% CI</th><th>Best in class</th><th>Read</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.tp.name)}</td><td class="n">${fmt(r.you*100,1)}</td><td class="n">${fmt(r.oth*100,1)}</td><td class="n" style="color:${r.sig&&r.gap>0?"var(--bad)":r.sig&&r.gap<0?"var(--good)":"inherit"}">${r.gap>0?"+":""}${fmt(r.gap*100,1)} <span class="muted">±${fmt(r.ci*100,1)}</span></td><td>${esc(r.best)} <span class="muted num">${fmt(r.bestS*100,1)}</span></td><td>${r.sig?(r.gap>0?'<span class="pill bad">Behind</span>':'<span class="pill good">Ahead</span>'):'<span class="pill">No clear gap</span>'}</td></tr>`).join("")}</tbody>`;
+  $("#compTbl").innerHTML=`<thead><tr><th>Topic</th><th class="n">You /100</th><th class="n">Others /100</th><th class="n">Gap ± 95% CI</th><th>Best in class</th><th>Read</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${esc(r.tp.name)}</td><td class="n">${fmt(r.you*100,1)}</td><td class="n">${fmt(r.oth*100,1)}</td><td class="n" style="color:${r.sig&&r.gap>0?"var(--bad)":r.sig&&r.gap<0?"var(--good)":"inherit"}">${r.gap>0?"+":""}${fmt(r.gap*100,1)} <span class="muted">±${fmt(r.ci*100,1)}</span></td><td>${esc(r.best)} <span class="muted num">${fmt(r.bestS*100,1)}</span></td><td>${r.adj?(r.gap>0?'<span class="pill bad">Behind</span>':'<span class="pill good">Ahead</span>'):r.sig?`<span class="pill warn" title="Outside its 95% interval but not after correcting for ${TAX.length} comparisons">${r.gap>0?"Weakly behind":"Weakly ahead"}</span>`:'<span class="pill">No clear gap</span>'}</td></tr>`).join("")}</tbody>`;
 }
 const METRIC={
  "Payout delays":"Payout-related tickets per 1,000 active partners","Incentive rules":"Incentive disputes per week and partner D30 retention","Low pay per order":"Net earnings per online hour (survey + payout data)","ID blocks":"Wrongful-block appeals overturned and time to resolution","App crashes & login":"Crash-free sessions % and login success rate","GPS & distance":"Distance-dispute tickets per 1,000 orders","Restaurant wait time":"Median wait at pickup and orders lost to waiting","Support quality":"First-response time and ticket CSAT","Earnings breakdown":"Weekly users of earnings screen and 'how is pay calculated' tickets","Fuel allowance":"Partner churn citing cost and net earnings per hour","Insurance & safety":"Claims filed vs approved and awareness of cover",
@@ -1572,7 +1440,7 @@ $("#cbNeg").addEventListener("click",()=>{ui.cband="neg";renderCompetitors();ren
 $("#wUp").addEventListener("change",e=>{ui.wup=e.target.checked;renderPrioritize()});
 $("#prioTbl").addEventListener("change",e=>{const a=e.target.closest("select[data-add]");if(a){if(!a.value)return;const sc=JSON.parse($("#prioTbl").dataset.scores).find(x=>x.name===a.dataset.add);if(!sc)return;ROADMAP.push({...sc,col:a.value,app:ui.app,added:Date.now()});saveRM();renderPrioritize();renderRoadmap();toast(`Added to ${a.value}`);return}const s=e.target.closest("[data-eff]");if(!s)return;ui.effort[s.dataset.eff]=s.value;store("rr_effort",ui.effort);renderPrioritize()});
 $("#board").addEventListener("click",e=>{const m=e.target.closest("[data-move]"),d=e.target.closest("[data-del]");if(m){ROADMAP.find(x=>x.name===m.dataset.move).col=m.dataset.col}else if(d){ROADMAP=ROADMAP.filter(x=>x.name!==d.dataset.del)}else return;saveRM();renderRoadmap();renderPrioritize()});
-$("#rmCopy").addEventListener("click",()=>{const md=["# Roadmap (ReviewRadar)",`Data: ${DATA.source==="real"?"real public Play Store reviews":DATA.source==="sim"?"SIMULATED reviews":"imported reviews"}`,...["Now","Next","Later"].flatMap(c=>[`\n## ${c}`,...ROADMAP.filter(x=>x.col===c).map(x=>`- **${x.name}** (${x.app}; priority ${fmt(x.score,1)}, ${x.n} mentions, ${pct(x.share,1)} of reviews). Metric: ${METRIC[x.name]||"TBD"}. Evidence: "${x.ev}"`)])].join("\n");navigator.clipboard.writeText(md).then(()=>toast("Roadmap copied")).catch(()=>toast("Copy is blocked here. Select the cards and copy manually."))});
+$("#rmCopy").addEventListener("click",()=>{const md=["# Roadmap (ReviewRadar)",`Data: ${DATA.source==="real"?"real public Play Store reviews":DATA.source==="sim"?"SIMULATED reviews":"imported reviews"}`,...["Now","Next","Later"].flatMap(c=>[`\n## ${c}`,...ROADMAP.filter(x=>x.col===c).map(x=>`- **${x.name}** (${x.app}, priority ${fmt(x.score,1)}, ${x.n} mentions, ${pct(x.share,1)} of reviews). Metric: ${METRIC[x.name]||"TBD"}. Evidence: "${x.ev}"`)])].join("\n");navigator.clipboard.writeText(md).then(()=>toast("Roadmap copied")).catch(()=>toast("Copy is blocked here. Select the cards and copy manually."))});
 $("#rmClear").addEventListener("click",()=>{$("#rmConfirm").hidden=false});
 $("#rmNo").addEventListener("click",()=>{$("#rmConfirm").hidden=true});
 $("#rmYes").addEventListener("click",()=>{ROADMAP=[];saveRM();$("#rmConfirm").hidden=true;renderRoadmap();renderPrioritize();toast("Roadmap cleared")});

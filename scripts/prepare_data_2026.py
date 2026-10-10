@@ -17,16 +17,22 @@ def main(paths, out):
     raw_n = len(d)
     d["t"] = pd.to_datetime(d["review_date"], errors="coerce")
     d = d.dropna(subset=["t", "score"])
+    dropped = {"no date or rating": raw_n - len(d)}
     # a few source reviews contain U+FFFD replacement characters from broken encoding upstream, so drop them
     d["content"] = d["content"].fillna("").astype(str).str.replace("\ufffd", "", regex=False).str.strip()
-    d = d[d["content"].str.len() > 0].drop_duplicates("review_id")
+    n = len(d); d = d[d["content"].str.len() > 0]; dropped["empty text"] = n - len(d)
+    n = len(d); d = d.drop_duplicates("review_id"); dropped["duplicate review id"] = n - len(d)
+    n = len(d)
     # complete Monday to Sunday weeks only, so a partial first or last week cannot fake a change
     first = d["t"].min().normalize()
     start = first + pd.Timedelta(days=(7 - first.weekday()) % 7)
     end = d["t"].max().normalize()
     end_sunday = end if end.weekday() == 6 else end - pd.Timedelta(days=end.weekday() + 1)
     d = d[(d["t"] >= start) & (d["t"] < end_sunday + pd.Timedelta(days=1))].sort_values("t")
+    dropped["outside complete weeks"] = n - len(d)
     weeks = int(((end_sunday - start).days + 1) // 7)
+    last_partial = start - pd.Timedelta(days=1)
+    partial = f"{first.day} {first:%b} to {last_partial.day} {last_partial:%b %Y}" if start > first else ""
     # upstream flags 21 Apr to 5 May 2026 as a Play Store feed gap where positive reviews went missing
     gap0, gap1 = pd.Timestamp("2026-04-21"), pd.Timestamp("2026-05-05")
     gap_weeks = sorted({int((t - start).days // 7) for t in pd.date_range(gap0, gap1)})
@@ -43,18 +49,19 @@ def main(paths, out):
         "source": "github.com/Adithya-Monish-Kumar-K/ba-capstone-app-reviews (data/raw, commit 019dae4)",
         "method": "google-play-scraper, every English review from India posted 1 Apr to 20 Sep 2026, sorted newest first",
         "start": start.strftime("%Y-%m-%d"), "end": end_sunday.strftime("%Y-%m-%d"), "weeks": weeks,
-        "rows": len(rows), "raw_rows": raw_n, "per_app": counts, "gap_weeks": gap_weeks,
+        "rows": len(rows), "raw_rows": raw_n, "dropped": dropped, "partial_week": partial, "per_app": counts, "gap_weeks": gap_weeks,
         "caveats": [
+            f"{dropped['outside complete weeks']:,} raw reviews from {partial} are left out because they fall in a partial week. Every week in the app runs Monday to Sunday." if partial else "No partial weeks were dropped.",
             "Two thirds of reviews are three words or fewer, so topic tags cover a minority of reviews.",
-            "Upstream reports a Play Store feed gap from 21 Apr to 5 May 2026 in which positive reviews dropped sharply for Swiggy. Those weeks are shaded and left out of spike baselines.",
+            "Upstream reports a Play Store feed gap from 21 Apr to 5 May 2026 in which positive reviews dropped sharply for Swiggy. Those weeks are shaded in charts and left out of spike baselines, release checks and the metrics that compare windows or apps.",
             "Written reviews are harsher than the public store rating, which also counts ratings without text.",
             "Zomato has no reviews for 24 Jul 2026 in the source.",
             "Reviews were requested in English, so feedback written in Devanagari is missing. Hinglish in Latin script still appears."],
         "format": "compact", "apps": apps, "versions": [""] + vers,
         "cols": ["app index", "days since start", "rating", "text", "version index", "thumbs"],
     }
-    json.dump({"meta": meta, "rows": rows}, open(out, "w"), ensure_ascii=False, separators=(",", ":"))
-    print(out, len(rows), counts, start.date(), "to", end_sunday.date(), "weeks", weeks, "gap", gap_weeks)
+    json.dump({"meta": meta, "rows": rows}, open(out, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    print(out, len(rows), counts, start.date(), "to", end_sunday.date(), "weeks", weeks, "gap", gap_weeks, "dropped", dropped)
 
 if __name__ == "__main__":
     main(sys.argv[1:-1], sys.argv[-1])

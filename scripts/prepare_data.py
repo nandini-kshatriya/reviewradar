@@ -32,12 +32,12 @@ def main(paths, out):
         "source": "Public Play Store reviews, compiled in github.com/tanishka-anand/tanishka-anand-zomato-swiggy-review-intelligence (from Kaggle saloni1712/zomato-and-swiggy-play-store-reviews)",
         "start": start.strftime("%Y-%m-%d"), "weeks": WEEKS, "rows": len(rows),
         "caveats": [
-            "Collection method upstream is not documented; English-language scrape likely (Hindi script appears in under 0.1% of reviews).",
-            "Swiggy file is 64% one-star across its full range vs 43% for Zomato, which suggests different sampling, so compare complaint rates within rating bands where possible.",
+            "Collection method upstream is not documented. It is probably an English-language scrape, since Hindi script appears in under 0.1% of reviews.",
+            "Swiggy's upstream file (Jan 2022 to Jul 2023) is 64% one-star against 43% for Zomato's, and the 26 weeks used here are 65% against 33%. That points to different sampling, so compare complaint rates within rating bands.",
             "Reviews are a self-selected, negatively skewed sample of users, not a population estimate."],
         "cols": ["app", "date", "rating", "text", "version", "thumbs"],
     }
-    json.dump({"meta": meta, "rows": rows}, open(out, "w"), ensure_ascii=False, separators=(",", ":"))
+    json.dump({"meta": meta, "rows": rows}, open(out, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     print(out, len(rows), start.date(), "to", end_sunday.date())
 
 if __name__ == "__main__":
